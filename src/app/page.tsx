@@ -44,25 +44,22 @@ export default function Home() {
   const [stats, setStats] = useState<PriceStats | null>(null);
   const [error, setError] = useState('');
   const [lastScanned, setLastScanned] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
   
   const resultsRef = useRef<HTMLDivElement>(null);
-  const hasScrolledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const codeReaderRef = useRef<any>(null);
 
-  // Auto-scroll to results only once when data first loads
+  // Auto-scroll to results only once after search completes
   useEffect(() => {
-    if (priceData.length > 0 && stats && !hasScrolledRef.current) {
-      hasScrolledRef.current = true;
-      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (priceData.length > 0 && stats && hasSearched && resultsRef.current) {
+      // Scroll once, then reset the flag so it won't scroll again
+      resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setHasSearched(false); // Prevent future scrolls
     }
-    // Reset scroll flag when new search starts
-    if (priceData.length === 0 && !stats) {
-      hasScrolledRef.current = false;
-    }
-  }, [priceData, stats]);
+  }, [priceData, stats, hasSearched]);
 
   // Initialize barcode scanner
   useEffect(() => {
@@ -145,6 +142,7 @@ export default function Home() {
     setError('');
     setPriceData([]);
     setStats(null);
+    setHasSearched(true);
 
     try {
       // Use eBay Finding API or fallback to mock data for demo
