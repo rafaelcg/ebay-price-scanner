@@ -46,6 +46,10 @@ export default function Home() {
   const [lastScanned, setLastScanned] = useState('');
   
   const resultsRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const codeReaderRef = useRef<any>(null);
 
   // Auto-scroll to results when data loads
   useEffect(() => {
