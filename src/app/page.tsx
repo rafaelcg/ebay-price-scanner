@@ -46,15 +46,21 @@ export default function Home() {
   const [lastScanned, setLastScanned] = useState('');
   
   const resultsRef = useRef<HTMLDivElement>(null);
+  const hasScrolledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const codeReaderRef = useRef<any>(null);
 
-  // Auto-scroll to results when data loads
+  // Auto-scroll to results only once when data first loads
   useEffect(() => {
-    if (priceData.length > 0 && stats) {
+    if (priceData.length > 0 && stats && !hasScrolledRef.current) {
+      hasScrolledRef.current = true;
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    // Reset scroll flag when new search starts
+    if (priceData.length === 0 && !stats) {
+      hasScrolledRef.current = false;
     }
   }, [priceData, stats]);
 
