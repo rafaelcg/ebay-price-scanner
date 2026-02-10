@@ -45,10 +45,14 @@ export default function Home() {
   const [error, setError] = useState('');
   const [lastScanned, setLastScanned] = useState('');
   
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const codeReaderRef = useRef<any>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to results when data loads
+  useEffect(() => {
+    if (priceData.length > 0 && stats) {
+      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [priceData, stats]);
 
   // Initialize barcode scanner
   useEffect(() => {
@@ -352,6 +356,7 @@ export default function Home() {
       <AnimatePresence>
         {priceData.length > 0 && stats && (
           <motion.section
+            ref={resultsRef}
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 40 }}
@@ -365,8 +370,8 @@ export default function Home() {
                 transition={{ delay: 0.1 }}
                 className="glass rounded-2xl p-6 text-center"
               >
-                <p className="text-gray-400 text-sm mb-2">Average Price</p>
-                <p className="text-2xl md:text-3xl font-bold text-green-400">{formatCurrency(stats.average)}</p>
+                <p className="text-gray-300 text-sm mb-2">Average Price</p>
+                <p className="text-2xl md:text-3xl font-bold text-emerald-300">{formatCurrency(stats.average)}</p>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -374,8 +379,8 @@ export default function Home() {
                 transition={{ delay: 0.2 }}
                 className="glass rounded-2xl p-6 text-center"
               >
-                <p className="text-gray-400 text-sm mb-2">Median Price</p>
-                <p className="text-2xl md:text-3xl font-bold text-blue-400">{formatCurrency(stats.median)}</p>
+                <p className="text-gray-300 text-sm mb-2">Median Price</p>
+                <p className="text-2xl md:text-3xl font-bold text-sky-300">{formatCurrency(stats.median)}</p>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -383,9 +388,9 @@ export default function Home() {
                 transition={{ delay: 0.3 }}
                 className="glass rounded-2xl p-6 text-center"
               >
-                <p className="text-gray-400 text-sm mb-2">Lowest Price</p>
-                <p className="text-2xl md:text-3xl font-bold text-red-400">{formatCurrency(stats.min)}</p>
-                <TrendingDown className="w-5 h-5 text-red-400 mx-auto mt-2" />
+                <p className="text-gray-300 text-sm mb-2">Lowest Price</p>
+                <p className="text-2xl md:text-3xl font-bold text-rose-300">{formatCurrency(stats.min)}</p>
+                <TrendingDown className="w-5 h-5 text-rose-400 mx-auto mt-2" />
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -393,9 +398,9 @@ export default function Home() {
                 transition={{ delay: 0.4 }}
                 className="glass rounded-2xl p-6 text-center"
               >
-                <p className="text-gray-400 text-sm mb-2">Highest Price</p>
-                <p className="text-2xl md:text-3xl font-bold text-purple-400">{formatCurrency(stats.max)}</p>
-                <TrendingUp className="w-5 h-5 text-purple-400 mx-auto mt-2" />
+                <p className="text-gray-300 text-sm mb-2">Highest Price</p>
+                <p className="text-2xl md:text-3xl font-bold text-violet-300">{formatCurrency(stats.max)}</p>
+                <TrendingUp className="w-5 h-5 text-violet-400 mx-auto mt-2" />
               </motion.div>
             </div>
 
@@ -403,10 +408,10 @@ export default function Home() {
             <div className="glass rounded-3xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Package className="w-5 h-5 text-purple-400" />
+                  <Package className="w-5 h-5 text-violet-400" />
                   Recent Sold Listings
                 </h2>
-                <span className="text-gray-400">{stats.count} items analyzed</span>
+                <span className="text-gray-300">{stats.count} items analyzed</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -433,18 +438,18 @@ export default function Home() {
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-white font-medium text-sm line-clamp-2 mb-2 group-hover:text-purple-300 transition-colors">
+                        <p className="text-white font-medium text-sm line-clamp-2 mb-2 group-hover:text-violet-300 transition-colors">
                           {item.title}
                         </p>
                         <div className="flex items-center justify-between">
-                          <span className="text-lg font-bold text-green-400">
+                          <span className="text-lg font-bold text-emerald-300">
                             {formatCurrency(item.price)}
                           </span>
-                          <span className="text-xs text-gray-500 bg-white/10 px-2 py-1 rounded-full">
+                          <span className="text-xs text-gray-400 bg-white/10 px-2 py-1 rounded-full">
                             {item.condition}
                           </span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-400 mt-1">
                           Sold {item.soldDate}
                         </p>
                       </div>
