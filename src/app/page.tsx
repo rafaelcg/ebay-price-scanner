@@ -77,6 +77,14 @@ export default function Home() {
     };
   }, []);
 
+  // Handle camera stream when scanning starts
+  useEffect(() => {
+    if (isScanning && streamRef.current && videoRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(err => console.error('Video play error:', err));
+    }
+  }, [isScanning]);
+
   const startScanning = async () => {
     try {
       setError('');
@@ -84,31 +92,29 @@ export default function Home() {
         video: { facingMode: 'environment', width: 1280, height: 720 }
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
       setIsScanning(true);
 
-      // Start continuous scanning
-      if (codeReaderRef.current && videoRef.current) {
-        codeReaderRef.current.decodeFromVideoDevice(
-          undefined,
-          videoRef.current,
-          async (result: any, error: any) => {
-            if (result) {
-              const code = result.getText();
-              if (code !== lastScanned) {
-                setLastScanned(code);
-                setSearchMode('barcode');
-                setQuery(code);
-                stopScanning();
-                await searchPrices(code);
+      // Start continuous scanning after state updates
+      setTimeout(() => {
+        if (codeReaderRef.current && videoRef.current) {
+          codeReaderRef.current.decodeFromVideoDevice(
+            undefined,
+            videoRef.current,
+            async (result: any, error: any) => {
+              if (result) {
+                const code = result.getText();
+                if (code !== lastScanned) {
+                  setLastScanned(code);
+                  setSearchMode('barcode');
+                  setQuery(code);
+                  stopScanning();
+                  await searchPrices(code);
+                }
               }
             }
-          }
-        );
-      }
+          );
+        }
+      }, 100);
     } catch (err) {
       setError('Camera access denied. Please allow camera permissions.');
       setIsScanning(false);
@@ -294,6 +300,7 @@ export default function Home() {
                 <video
                   ref={videoRef}
                   className="w-full h-full object-cover"
+                  autoPlay
                   playsInline
                   muted
                 />
