@@ -45,6 +45,8 @@ export default function Home() {
   const [error, setError] = useState('');
   const [lastScanned, setLastScanned] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const isSearchingRef = useRef(false);
   
   const resultsRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -54,12 +56,12 @@ export default function Home() {
 
   // Auto-scroll to results only once after search completes
   useEffect(() => {
-    if (priceData.length > 0 && stats && hasSearched && resultsRef.current) {
+    if (priceData.length > 0 && stats && hasSearched && !isSearching && resultsRef.current) {
       // Scroll once, then reset the flag so it won't scroll again
       resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setHasSearched(false); // Prevent future scrolls
+      setHasSearched(false);
     }
-  }, [priceData, stats, hasSearched]);
+  }, [priceData, stats, hasSearched, isSearching]);
 
   // Initialize barcode scanner
   useEffect(() => {
@@ -104,7 +106,7 @@ export default function Home() {
             undefined,
             videoRef.current,
             async (result: any, error: any) => {
-              if (result) {
+              if (result && !isSearchingRef.current) {
                 const code = result.getText();
                 if (code !== lastScanned) {
                   setLastScanned(code);
@@ -125,6 +127,9 @@ export default function Home() {
   };
 
   const stopScanning = () => {
+    if (codeReaderRef.current) {
+      codeReaderRef.current.reset();
+    }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -136,8 +141,10 @@ export default function Home() {
   };
 
   const searchPrices = async (searchQuery: string) => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim() || isSearchingRef.current) return;
     
+    isSearchingRef.current = true;
+    setIsSearching(true);
     setIsLoading(true);
     setError('');
     setPriceData([]);
@@ -164,7 +171,9 @@ export default function Home() {
       setError('Failed to fetch eBay data. Please try again.');
       console.error(err);
     } finally {
+      isSearchingRef.current = false;
       setIsLoading(false);
+      setIsSearching(false);
     }
   };
 
