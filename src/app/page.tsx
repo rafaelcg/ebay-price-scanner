@@ -194,7 +194,7 @@ export default function Home() {
             <span className="text-xl font-bold text-white">PriceScan</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-400 hidden sm:block">Powered by eBay Sold Data</span>
+            <span className="text-sm text-gray-300 hidden sm:block">Powered by eBay Sold Data</span>
           </div>
         </nav>
 
@@ -238,13 +238,13 @@ export default function Home() {
                   </button>
                 )}
                 <div className="flex-1 relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
                   <input
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder={searchMode === 'barcode' ? 'Or type product name...' : 'Search any product...'}
-                    className="w-full px-12 py-4 bg-white/5 rounded-xl text-white placeholder-gray-400 border border-white/10 focus:outline-none focus:border-purple-500/50 focus:bg-white/10 transition-all"
+                    className="w-full px-12 py-4 bg-white/5 rounded-xl text-white placeholder-gray-300 border border-white/10 focus:outline-none focus:border-purple-500/50 focus:bg-white/10 transition-all"
                   />
                 </div>
                 <button
@@ -268,7 +268,7 @@ export default function Home() {
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all ${
                   searchMode === 'barcode' 
                     ? 'bg-white/10 text-white' 
-                    : 'text-gray-400 hover:text-white'
+                    : 'text-gray-300 hover:text-white'
                 }`}
               >
                 <Barcode className="w-4 h-4" />
@@ -279,7 +279,7 @@ export default function Home() {
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all ${
                   searchMode === 'text' 
                     ? 'bg-white/10 text-white' 
-                    : 'text-gray-400 hover:text-white'
+                    : 'text-gray-300 hover:text-white'
                 }`}
               >
                 <Search className="w-4 h-4" />
@@ -354,10 +354,10 @@ export default function Home() {
               className="glass rounded-2xl p-6 text-center"
             >
               <div className="w-12 h-12 mx-auto mb-4 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl flex items-center justify-center">
-                <feature.icon className="w-6 h-6 text-purple-400" />
+                <feature.icon className="w-6 h-6 text-purple-300" />
               </div>
               <h3 className="text-white font-semibold mb-1">{feature.title}</h3>
-              <p className="text-gray-400 text-sm">{feature.desc}</p>
+              <p className="text-gray-300 text-sm">{feature.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -381,8 +381,8 @@ export default function Home() {
                 transition={{ delay: 0.1 }}
                 className="glass rounded-2xl p-6 text-center"
               >
-                <p className="text-gray-300 text-sm mb-2">Average Price</p>
-                <p className="text-2xl md:text-3xl font-bold text-emerald-300">{formatCurrency(stats.average)}</p>
+                <p className="text-gray-200 text-sm mb-2 font-medium">Average Price</p>
+                <p className="text-2xl md:text-3xl font-bold text-emerald-200">{formatCurrency(stats.average)}</p>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -390,8 +390,8 @@ export default function Home() {
                 transition={{ delay: 0.2 }}
                 className="glass rounded-2xl p-6 text-center"
               >
-                <p className="text-gray-300 text-sm mb-2">Median Price</p>
-                <p className="text-2xl md:text-3xl font-bold text-sky-300">{formatCurrency(stats.median)}</p>
+                <p className="text-gray-200 text-sm mb-2 font-medium">Median Price</p>
+                <p className="text-2xl md:text-3xl font-bold text-sky-200">{formatCurrency(stats.median)}</p>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -399,9 +399,9 @@ export default function Home() {
                 transition={{ delay: 0.3 }}
                 className="glass rounded-2xl p-6 text-center"
               >
-                <p className="text-gray-300 text-sm mb-2">Lowest Price</p>
-                <p className="text-2xl md:text-3xl font-bold text-rose-300">{formatCurrency(stats.min)}</p>
-                <TrendingDown className="w-5 h-5 text-rose-400 mx-auto mt-2" />
+                <p className="text-gray-200 text-sm mb-2 font-medium">Lowest Price</p>
+                <p className="text-2xl md:text-3xl font-bold text-rose-200">{formatCurrency(stats.min)}</p>
+                <TrendingDown className="w-5 h-5 text-rose-300 mx-auto mt-2" />
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -409,9 +409,9 @@ export default function Home() {
                 transition={{ delay: 0.4 }}
                 className="glass rounded-2xl p-6 text-center"
               >
-                <p className="text-gray-300 text-sm mb-2">Highest Price</p>
-                <p className="text-2xl md:text-3xl font-bold text-violet-300">{formatCurrency(stats.max)}</p>
-                <TrendingUp className="w-5 h-5 text-violet-400 mx-auto mt-2" />
+                <p className="text-gray-200 text-sm mb-2 font-medium">Highest Price</p>
+                <p className="text-2xl md:text-3xl font-bold text-violet-200">{formatCurrency(stats.max)}</p>
+                <TrendingUp className="w-5 h-5 text-violet-300 mx-auto mt-2" />
               </motion.div>
             </div>
 
@@ -419,10 +419,10 @@ export default function Home() {
             <div className="glass rounded-3xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Package className="w-5 h-5 text-violet-400" />
+                  <Package className="w-5 h-5 text-violet-300" />
                   Recent Sold Listings
                 </h2>
-                <span className="text-gray-300">{stats.count} items analyzed</span>
+                <span className="text-gray-200 font-medium">{stats.count} items analyzed</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -449,14 +449,14 @@ export default function Home() {
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-white font-medium text-sm line-clamp-2 mb-2 group-hover:text-violet-300 transition-colors">
+                        <p className="text-gray-100 font-medium text-sm line-clamp-2 mb-2 group-hover:text-violet-200 transition-colors">
                           {item.title}
                         </p>
                         <div className="flex items-center justify-between">
-                          <span className="text-lg font-bold text-emerald-300">
+                          <span className="text-xl font-bold text-emerald-200">
                             {formatCurrency(item.price)}
                           </span>
-                          <span className="text-xs text-gray-400 bg-white/10 px-2 py-1 rounded-full">
+                          <span className="text-xs text-gray-300 bg-white/10 px-2 py-1 rounded-full border border-white/10">
                             {item.condition}
                           </span>
                         </div>
@@ -491,7 +491,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="relative z-10 text-center py-12">
-        <p className="text-gray-500 text-sm">
+        <p className="text-gray-400 text-sm">
           Data sourced from eBay sold listings • Results may vary
         </p>
       </footer>
