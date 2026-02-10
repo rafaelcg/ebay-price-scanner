@@ -200,7 +200,7 @@ export default function Home() {
             <span className="text-xl font-bold text-white">PriceScan</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-300 hidden sm:block">Powered by eBay Sold Data</span>
+            <span className="text-sm text-gray-200 hidden sm:block">Powered by eBay Sold Data</span>
           </div>
         </nav>
 
@@ -244,13 +244,13 @@ export default function Home() {
                   </button>
                 )}
                 <div className="flex-1 relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-200" />
                   <input
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder={searchMode === 'barcode' ? 'Or type product name...' : 'Search any product...'}
-                    className="w-full px-12 py-4 bg-white/5 rounded-xl text-white placeholder-gray-300 border border-white/10 focus:outline-none focus:border-purple-500/50 focus:bg-white/10 transition-all"
+                    className="w-full px-12 py-4 bg-white/10 rounded-xl text-white placeholder-gray-200 border border-white/20 focus:outline-none focus:border-purple-500/70 focus:bg-white/20 transition-all"
                   />
                 </div>
                 <button
@@ -359,11 +359,11 @@ export default function Home() {
               transition={{ duration: 0.4, delay: 0.4 + i * 0.1 }}
               className="glass rounded-2xl p-6 text-center"
             >
-              <div className="w-12 h-12 mx-auto mb-4 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl flex items-center justify-center">
-                <feature.icon className="w-6 h-6 text-purple-300" />
+              <div className="w-12 h-12 mx-auto mb-4 bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-xl flex items-center justify-center">
+                <feature.icon className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-white font-semibold mb-1">{feature.title}</h3>
-              <p className="text-gray-300 text-sm">{feature.desc}</p>
+              <p className="text-gray-200 text-sm">{feature.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -387,8 +387,8 @@ export default function Home() {
                 transition={{ delay: 0.1 }}
                 className="glass rounded-2xl p-6 text-center"
               >
-                <p className="text-gray-200 text-sm mb-2 font-medium">Average Price</p>
-                <p className="text-2xl md:text-3xl font-bold text-emerald-200">{formatCurrency(stats.average)}</p>
+                <p className="text-white text-sm mb-2 font-semibold tracking-wide">AVERAGE</p>
+                <p className="text-2xl md:text-3xl font-bold text-emerald-400">{formatCurrency(stats.average)}</p>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -396,8 +396,8 @@ export default function Home() {
                 transition={{ delay: 0.2 }}
                 className="glass rounded-2xl p-6 text-center"
               >
-                <p className="text-gray-200 text-sm mb-2 font-medium">Median Price</p>
-                <p className="text-2xl md:text-3xl font-bold text-sky-200">{formatCurrency(stats.median)}</p>
+                <p className="text-white text-sm mb-2 font-semibold tracking-wide">MEDIAN</p>
+                <p className="text-2xl md:text-3xl font-bold text-sky-400">{formatCurrency(stats.median)}</p>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -405,9 +405,9 @@ export default function Home() {
                 transition={{ delay: 0.3 }}
                 className="glass rounded-2xl p-6 text-center"
               >
-                <p className="text-gray-200 text-sm mb-2 font-medium">Lowest Price</p>
-                <p className="text-2xl md:text-3xl font-bold text-rose-200">{formatCurrency(stats.min)}</p>
-                <TrendingDown className="w-5 h-5 text-rose-300 mx-auto mt-2" />
+                <p className="text-white text-sm mb-2 font-semibold tracking-wide">LOWEST</p>
+                <p className="text-2xl md:text-3xl font-bold text-red-400">{formatCurrency(stats.min)}</p>
+                <TrendingDown className="w-5 h-5 text-red-400 mx-auto mt-2" />
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -415,9 +415,9 @@ export default function Home() {
                 transition={{ delay: 0.4 }}
                 className="glass rounded-2xl p-6 text-center"
               >
-                <p className="text-gray-200 text-sm mb-2 font-medium">Highest Price</p>
-                <p className="text-2xl md:text-3xl font-bold text-violet-200">{formatCurrency(stats.max)}</p>
-                <TrendingUp className="w-5 h-5 text-violet-300 mx-auto mt-2" />
+                <p className="text-white text-sm mb-2 font-semibold tracking-wide">HIGHEST</p>
+                <p className="text-2xl md:text-3xl font-bold text-purple-400">{formatCurrency(stats.max)}</p>
+                <TrendingUp className="w-5 h-5 text-purple-400 mx-auto mt-2" />
               </motion.div>
             </div>
 
@@ -425,10 +425,10 @@ export default function Home() {
             <div className="glass rounded-3xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Package className="w-5 h-5 text-violet-300" />
+                  <Package className="w-5 h-5 text-white" />
                   Recent Sold Listings
                 </h2>
-                <span className="text-gray-200 font-medium">{stats.count} items analyzed</span>
+                <span className="text-white font-medium">{stats.count} items analyzed</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -441,7 +441,7 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 + i * 0.05 }}
-                    className="group block bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all hover:scale-[1.02]"
+                    className="group block bg-white/10 rounded-xl p-4 hover:bg-white/20 transition-all hover:scale-[1.02]"
                   >
                     <div className="flex gap-4">
                       {item.image && (
@@ -455,18 +455,18 @@ export default function Home() {
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-gray-100 font-medium text-sm line-clamp-2 mb-2 group-hover:text-violet-200 transition-colors">
+                        <p className="text-white font-medium text-sm line-clamp-2 mb-2">
                           {item.title}
                         </p>
                         <div className="flex items-center justify-between">
-                          <span className="text-xl font-bold text-emerald-200">
+                          <span className="text-xl font-bold text-emerald-400">
                             {formatCurrency(item.price)}
                           </span>
-                          <span className="text-xs text-gray-300 bg-white/10 px-2 py-1 rounded-full border border-white/10">
+                          <span className="text-xs text-white bg-white/20 px-2 py-1 rounded-full">
                             {item.condition}
                           </span>
                         </div>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-gray-300 text-xs mt-1">
                           Sold {item.soldDate}
                         </p>
                       </div>
@@ -488,8 +488,8 @@ export default function Home() {
             exit={{ opacity: 0, y: 20 }}
             className="relative z-10 max-w-xl mx-auto px-6"
           >
-            <div className="glass rounded-2xl p-6 border-red-500/30">
-              <p className="text-red-400 text-center">{error}</p>
+            <div className="glass rounded-2xl p-6 border-red-500/50">
+              <p className="text-red-300 text-center font-medium">{error}</p>
             </div>
           </motion.div>
         )}
@@ -497,7 +497,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="relative z-10 text-center py-12">
-        <p className="text-gray-400 text-sm">
+        <p className="text-gray-300 text-sm">
           Data sourced from eBay sold listings • Results may vary
         </p>
       </footer>
