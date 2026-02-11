@@ -150,8 +150,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Get marketplace ID
+    // Get marketplace ID and access token
     const marketplaceId = MARKETPLACE_IDS[marketplace] || MARKETPLACE_IDS['GB'];
+    const accessToken = await getAccessToken();
 
     // Search for sold items using Browse API (relevance by default)
     const searchUrl = `${EBAY_API_BASE}/buy/browse/v1/item_summary/search?q=${encodeURIComponent(query)}&filter=buyingOptions:FIXED_PRICE,soldItemsOnly:true&limit=50`;
