@@ -12,9 +12,36 @@ import {
   Package,
   Sparkles,
   Zap,
-  Shield
+  Shield,
+  Bell,
+  Clock,
+  Filter,
+  TrendingRight
 } from 'lucide-react';
 import { LanguageProvider, useLanguage, MARKETPLACES } from './LanguageContext';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 interface PriceData {
   title: string;
@@ -25,6 +52,7 @@ interface PriceData {
   currency: string;
   condition: string;
   url: string;
+  soldDateRaw?: string;
 }
 
 interface PriceStats {
@@ -35,26 +63,62 @@ interface PriceStats {
   median: number;
 }
 
+interface ActiveListing {
+  title: string;
+  image: string;
+  price: number;
+  currency: string;
+  url: string;
+  condition: string;
+}
+
+interface PriceHistoryPoint {
+  date: string;
+  avgPrice: number;
+  count: number;
+}
+
+interface Alert {
+  email: string;
+  product: string;
+  targetPrice: number;
+  marketplace: string;
+}
+
+const CONDITIONS = [
+  { id: 'all', name: 'All Conditions' },
+  { id: '3000', name: 'Used' },
+  { id: '3001', name: 'Used - Very Good' },
+  { id: '3002', name: 'Used - Good' },
+  { id: '3003', name: 'Used - Acceptable' },
+  { id: '3004', name: 'New' },
+  { id: '3005', name: 'New - Other' },
+  { id: '3007', name: 'Refurbished' },
+];
+
 function HomeContent() {
   const { t, locale, setLocale, marketplace, setMarketplace } = useLanguage();
   const [query, setQuery] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [priceData, setPriceData] = useState<PriceData[]>([]);
+  const [activeListings, setActiveListings] = useState<ActiveListing[]>([]);
   const [stats, setStats] = useState<PriceStats | null>(null);
+  const [priceHistory, setPriceHistory] = useState<PriceHistoryPoint[]>([]);
   const [error, setError] = useState('');
-  const [lastScanned, setLastScanned] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const isSearchingRef = useRef(false);
+  const [selectedCondition, setSelectedCondition] = useState('all');
+  const [alertEmail, setAlertEmail] = useState('');
+  const [alertTarget, setAlertTarget] = useState('');
+  const [alertSaved, setAlertSaved] = useState(false);
   
+  const isSearchingRef = useRef(false);
   const resultsRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const codeReaderRef = useRef<any>(null);
 
-  // Auto-scroll to results only once after search completes
   useEffect(() => {
     if (priceData.length > 0 && stats && hasSearched && !isSearching && resultsRef.current) {
       resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -62,7 +126,6 @@ function HomeContent() {
     }
   }, [priceData, stats, hasSearched, isSearching]);
 
-  // Initialize barcode scanner
   useEffect(() => {
     const initScanner = async () => {
       try {
@@ -73,7 +136,6 @@ function HomeContent() {
       }
     };
     initScanner();
-
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
@@ -89,21 +151,17 @@ function HomeContent() {
       });
       streamRef.current = stream;
       setIsScanning(true);
-
       setTimeout(() => {
         if (codeReaderRef.current && videoRef.current) {
           codeReaderRef.current.decodeFromVideoDevice(
             undefined,
             videoRef.current,
-            async (result: any, error: any) => {
+            async (result: any) => {
               if (result && !isSearchingRef.current) {
                 const code = result.getText();
-                if (code !== lastScanned) {
-                  setLastScanned(code);
-                  setQuery(code);
-                  stopScanning();
-                  await searchPrices(code);
-                }
+                setQuery(code);
+                stopScanning();
+                await searchPrices(code);
               }
             }
           );
@@ -116,16 +174,12 @@ function HomeContent() {
   };
 
   const stopScanning = () => {
-    if (codeReaderRef.current) {
-      codeReaderRef.current.reset();
-    }
+    if (codeReaderRef.current) codeReaderRef.current.reset();
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
+    if (videoRef.current) videoRef.current.srcObject = null;
     setIsScanning(false);
   };
 
@@ -138,22 +192,37 @@ function HomeContent() {
     setError('');
     setPriceData([]);
     setStats(null);
+    setActiveListings([]);
+    setPriceHistory([]);
     setHasSearched(true);
 
     try {
-      const response = await fetch(`/api/ebay?q=${encodeURIComponent(searchQuery)}&marketplace=${marketplace.id}`);
-      const data = await response.json();
+      // Fetch sold listings
+      const soldRes = await fetch(
+        `/api/ebay?q=${encodeURIComponent(searchQuery)}&marketplace=${marketplace.id}&condition=${selectedCondition}`
+      );
+      const soldData = await soldRes.json();
 
-      if (response.ok && data.listings && data.listings.length > 0) {
-        setPriceData(data.listings);
-        setStats(data.stats);
-      } else if (response.ok && data.listings?.length === 0) {
+      if (soldRes.ok && soldData.listings?.length > 0) {
+        setPriceData(soldData.listings);
+        setStats(soldData.stats);
+      } else if (soldRes.ok && soldData.listings?.length === 0) {
         setError(t.listings.noResults);
-      } else if (data.error) {
-        setError(data.details || data.error);
-      } else {
-        throw new Error('Failed to fetch prices');
       }
+
+      // Fetch active listings
+      const activeRes = await fetch(
+        `/api/ebay/active?q=${encodeURIComponent(searchQuery)}&marketplace=${marketplace.id}`
+      );
+      const activeData = await activeRes.json();
+      if (activeRes.ok && activeData.listings) {
+        setActiveListings(activeData.listings);
+      }
+
+      // Generate mock price history (in production, fetch from API)
+      const history = generatePriceHistory(soldData.listings || []);
+      setPriceHistory(history);
+
     } catch (err) {
       setError(t.errors.apiError);
       console.error(err);
@@ -164,18 +233,51 @@ function HomeContent() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    searchPrices(query);
+  const generatePriceHistory = (listings: PriceData[]): PriceHistoryPoint[] => {
+    if (listings.length === 0) return [];
+    
+    // Group by date and calculate averages
+    const grouped: Record<string, { sum: number; count: number }> = {};
+    listings.forEach(item => {
+      if (item.soldDateRaw) {
+        if (!grouped[item.soldDateRaw]) {
+          grouped[item.soldDateRaw] = { sum: 0, count: 0 };
+        }
+        grouped[item.soldDateRaw].sum += item.price;
+        grouped[item.soldDateRaw].count += 1;
+      }
+    });
+
+    return Object.entries(grouped)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .slice(-30) // Last 30 data points
+      .map(([date, data]) => ({
+        date,
+        avgPrice: Math.round(data.sum / data.count),
+        count: data.count
+      }));
+  };
+
+  const saveAlert = () => {
+    if (!alertEmail || !alertTarget) return;
+    
+    const alerts: Alert[] = JSON.parse(localStorage.getItem('priceAlerts') || '[]');
+    alerts.push({
+      email: alertEmail,
+      product: query,
+      targetPrice: parseFloat(alertTarget),
+      marketplace: marketplace.id
+    });
+    localStorage.setItem('priceAlerts', JSON.stringify(alerts));
+    setAlertSaved(true);
+    setTimeout(() => setAlertSaved(false), 3000);
+    setAlertEmail('');
+    setAlertTarget('');
   };
 
   const formatCurrency = (price: number) => {
     const localeMap: Record<string, string> = {
-      'pt-BR': 'pt-BR',
-      'es': 'es',
-      'fr': 'fr',
-      'it': 'it',
-      'en': 'en-US',
+      'pt-BR': 'pt-BR', 'es': 'es', 'fr': 'fr', 'it': 'it', 'en': 'en-US',
     };
     return new Intl.NumberFormat(localeMap[locale] || 'en-US', {
       style: 'currency',
@@ -183,12 +285,42 @@ function HomeContent() {
     }).format(price);
   };
 
+  const chartData = {
+    labels: priceHistory.map(p => p.date),
+    datasets: [
+      {
+        label: t.stats.average,
+        data: priceHistory.map(p => p.avgPrice),
+        borderColor: 'rgb(52, 211, 153)',
+        backgroundColor: 'rgba(52, 211, 153, 0.1)',
+        fill: true,
+        tension: 0.4,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+    },
+    scales: {
+      x: { display: false },
+      y: {
+        ticks: {
+          callback: (value: any) => formatCurrency(value),
+          color: '#9ca3af'
+        },
+        grid: { color: 'rgba(255,255,255,0.05)' }
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Hero Section */}
+      {/* Hero */}
       <header className="relative overflow-hidden">
-        {/* Background Effects */}
-        <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0">
           <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-3xl animate-pulse-slow" />
           <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-purple-500/20 to-transparent rounded-full blur-3xl animate-pulse-slow" />
         </div>
@@ -201,11 +333,10 @@ function HomeContent() {
             <span className="text-xl font-bold text-white">{t.app.title}</span>
           </div>
           <div className="flex items-center gap-4">
-            {/* Language Selector */}
             <select
               value={locale}
               onChange={(e) => setLocale(e.target.value as any)}
-              className="bg-slate-800/90 text-gray-200 text-sm rounded-lg px-3 py-2 border border-slate-700/50 focus:outline-none focus:border-purple-500/70 cursor-pointer"
+              className="bg-slate-800/90 text-gray-200 text-sm rounded-lg px-3 py-2 border border-slate-700/50 cursor-pointer"
             >
               {[
                 {id: 'en', flag: '🇺🇸'},
@@ -214,168 +345,91 @@ function HomeContent() {
                 {id: 'fr', flag: '🇫🇷'},
                 {id: 'it', flag: '🇮🇹'},
               ].map((lang) => (
-                <option key={lang.id} value={lang.id}>
-                  {lang.flag} {lang.id}
-                </option>
+                <option key={lang.id} value={lang.id}>{lang.flag} {lang.id}</option>
               ))}
             </select>
-            {/* Marketplace Selector */}
             <select
               value={marketplace.id}
               onChange={(e) => setMarketplace(MARKETPLACES.find(m => m.id === e.target.value) || MARKETPLACES[0])}
-              className="bg-slate-800/90 text-gray-200 text-sm rounded-lg px-3 py-2 border border-slate-700/50 focus:outline-none focus:border-purple-500/70 cursor-pointer"
+              className="bg-slate-800/90 text-gray-200 text-sm rounded-lg px-3 py-2 border border-slate-700/50 cursor-pointer"
             >
               {MARKETPLACES.map((mp) => (
-                <option key={mp.id} value={mp.id}>
-                  {mp.flag} {mp.name} ({mp.currency})
-                </option>
+                <option key={mp.id} value={mp.id}>{mp.flag} {mp.name} ({mp.currency})</option>
               ))}
             </select>
           </div>
         </nav>
 
-        {/* Hero Content */}
         <div className="relative z-10 max-w-4xl mx-auto px-6 pt-12 pb-24 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 text-balance">
               {t.app.tagline}
             </h1>
-            <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
-              {t.app.subtitle}
-            </p>
+            <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">{t.app.subtitle}</p>
           </motion.div>
 
-          {/* Search Box */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="max-w-2xl mx-auto"
-          >
+          {/* Search */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="max-w-2xl mx-auto">
             <div className="bg-slate-800/90 rounded-2xl p-2 border border-slate-700/50">
-              <form onSubmit={handleSubmit} className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={isScanning ? stopScanning : startScanning}
-                  className={`p-4 rounded-xl transition-all ${
-                    isScanning 
-                      ? 'bg-red-500/20 text-red-400 animate-pulse' 
-                      : 'bg-gradient-to-br from-blue-500 to-purple-600 text-white hover:shadow-lg hover:shadow-purple-500/25'
-                  }`}
-                  title={t.app.scan}
-                >
+              <form onSubmit={(e) => { e.preventDefault(); searchPrices(query); }} className="flex items-center gap-2">
+                <button type="button" onClick={isScanning ? stopScanning : startScanning} className={`p-4 rounded-xl transition-all ${isScanning ? 'bg-red-500/20 text-red-400 animate-pulse' : 'bg-gradient-to-br from-blue-500 to-purple-600 text-white hover:shadow-lg hover:shadow-purple-500/25'}`}>
                   <Barcode className="w-5 h-5" />
                 </button>
                 <div className="flex-1 relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder={t.app.searchPlaceholder}
-                    className="w-full px-12 py-4 bg-slate-700/50 rounded-xl text-gray-200 placeholder-gray-400 border border-slate-600/50 focus:outline-none focus:border-purple-500/70 focus:bg-slate-700 transition-all"
-                  />
+                  <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t.app.searchPlaceholder} className="w-full px-12 py-4 bg-slate-700/50 rounded-xl text-gray-200 placeholder-gray-400 border border-slate-600/50 focus:outline-none focus:border-purple-500/70" />
                 </div>
-                <button
-                  type="submit"
-                  disabled={isLoading || !query.trim()}
-                  className="px-8 py-4 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
-                  {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    t.app.searchButton
-                  )}
+                <select value={selectedCondition} onChange={(e) => setSelectedCondition(e.target.value)} className="bg-slate-700/50 text-gray-200 text-sm rounded-xl px-3 py-4 border border-slate-600/50 cursor-pointer">
+                  {CONDITIONS.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                </select>
+                <button type="submit" disabled={isLoading || !query.trim()} className="px-8 py-4 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                  {isLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t.app.searchButton}
                 </button>
               </form>
             </div>
           </motion.div>
-
-          {/* Camera Preview */}
-          <AnimatePresence>
-            {isScanning && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 bg-black"
-              >
-                <video
-                  ref={videoRef}
-                  className="w-full h-full object-cover"
-                  autoPlay
-                  playsInline
-                  muted
-                />
-                <canvas ref={canvasRef} className="hidden" />
-                
-                {/* Scanner Overlay */}
-                <div className="absolute inset-0 scanner-overlay flex items-center justify-center">
-                  <div className="relative w-72 h-72">
-                    <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-blue-500 rounded-tl-xl" />
-                    <div className="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-blue-500 rounded-tr-xl" />
-                    <div className="absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 border-blue-500 rounded-bl-xl" />
-                    <div className="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-blue-500 rounded-br-xl" />
-                    <div className="scanner-line top-0" />
-                  </div>
-                </div>
-                
-                <button
-                  onClick={stopScanning}
-                  className="absolute top-6 right-6 p-3 bg-white/10 backdrop-blur rounded-full text-white hover:bg-white/20 transition-all"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-                
-                <p className="absolute bottom-24 left-0 right-0 text-center text-white/80 text-lg">
-                  {t.app.pointCamera}
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
+
+        {/* Camera Preview */}
+        <AnimatePresence>
+          {isScanning && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black">
+              <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
+              <div className="absolute inset-0 scanner-overlay flex items-center justify-center">
+                <div className="relative w-72 h-72">
+                  <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-blue-500 rounded-tl-xl" />
+                  <div className="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-blue-500 rounded-tr-xl" />
+                  <div className="absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 border-blue-500 rounded-bl-xl" />
+                  <div className="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-blue-500 rounded-br-xl" />
+                  <div className="scanner-line top-0" />
+                </div>
+              </div>
+              <button onClick={stopScanning} className="absolute top-6 right-6 p-3 bg-white/10 backdrop-blur rounded-full text-white hover:bg-white/20 transition-all"><X className="w-6 h-6" /></button>
+              <p className="absolute bottom-24 left-0 right-0 text-center text-white/80 text-lg">{t.app.pointCamera}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
-      {/* Features */}
-      <section className="relative z-10 max-w-6xl mx-auto px-6 -mt-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            { icon: Zap, ...t.features.instant },
-            { icon: Shield, ...t.features.accurate },
-            { icon: Sparkles, ...t.features.easy },
-          ].map((feature, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.4 + i * 0.1 }}
-              className="bg-slate-800/90 rounded-2xl p-6 text-center border border-slate-700/50"
-            >
-              <div className="w-12 h-12 mx-auto mb-4 bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-xl flex items-center justify-center">
-                <feature.icon className="w-6 h-6 text-gray-200" />
-              </div>
-              <h3 className="text-gray-200 font-semibold mb-1">{feature.title}</h3>
-              <p className="text-gray-400 text-sm">{feature.desc}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Results Section */}
+      {/* Results */}
       <AnimatePresence>
         {priceData.length > 0 && stats && (
-          <motion.section
-            ref={resultsRef}
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 40 }}
-            className="relative z-10 max-w-6xl mx-auto px-6 py-16"
-          >
-            {/* Stats Cards */}
+          <motion.section ref={resultsRef} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }} className="relative z-10 max-w-6xl mx-auto px-6 py-16">
+            
+            {/* Price History Chart */}
+            {priceHistory.length > 0 && (
+              <div className="bg-slate-800/90 rounded-2xl p-6 border border-slate-700/50 mb-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <Clock className="w-5 h-5 text-emerald-400" />
+                  <h3 className="text-lg font-bold text-white">Price Trend (30 Days)</h3>
+                </div>
+                <div className="h-48">
+                  <Line data={chartData} options={chartOptions as any} />
+                </div>
+              </div>
+            )}
+
+            {/* Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               {[
                 { key: 'average', label: t.stats.average, value: stats.average, color: 'emerald' },
@@ -383,23 +437,68 @@ function HomeContent() {
                 { key: 'lowest', label: t.stats.lowest, value: stats.min, color: 'red', icon: TrendingDown },
                 { key: 'highest', label: t.stats.highest, value: stats.max, color: 'purple', icon: TrendingUp },
               ].map((stat, i) => (
-                <motion.div
-                  key={stat.key}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.1 + i * 0.1 }}
-                  className="bg-slate-800/90 rounded-2xl p-6 text-center border border-slate-700/50"
-                >
+                <motion.div key={stat.key} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 + i * 0.1 }} className="bg-slate-800/90 rounded-2xl p-6 text-center border border-slate-700/50">
                   <p className="text-gray-300 text-sm mb-2 font-semibold tracking-wide">{stat.label}</p>
-                  <p className={`text-2xl md:text-3xl font-bold text-${stat.color}-400`}>
-                    {formatCurrency(stat.value)}
-                  </p>
+                  <p className={`text-2xl md:text-3xl font-bold text-${stat.color}-400`}>{formatCurrency(stat.value)}</p>
                   {stat.icon && <stat.icon className={`w-5 h-5 text-${stat.color}-400 mx-auto mt-2`} />}
                 </motion.div>
               ))}
             </div>
 
-            {/* Listings */}
+            {/* Active vs Sold Comparison */}
+            {activeListings.length > 0 && (
+              <div className="bg-slate-800/90 rounded-2xl p-6 border border-slate-700/50 mb-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <TrendingRight className="w-5 h-5 text-blue-400" />
+                  <h3 className="text-lg font-bold text-white">Active Listings vs Sold Prices</h3>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-slate-700/50 rounded-xl p-4 text-center">
+                    <p className="text-gray-400 text-sm mb-1">Active Avg</p>
+                    <p className="text-xl font-bold text-blue-400">
+                      {formatCurrency(activeListings.reduce((a, b) => a + b.price, 0) / activeListings.length)}
+                    </p>
+                  </div>
+                  <div className="bg-slate-700/50 rounded-xl p-4 text-center">
+                    <p className="text-gray-400 text-sm mb-1">Sold Avg</p>
+                    <p className="text-xl font-bold text-emerald-400">{formatCurrency(stats.average)}</p>
+                  </div>
+                  <div className="bg-slate-700/50 rounded-xl p-4 text-center">
+                    <p className="text-gray-400 text-sm mb-1">Active Items</p>
+                    <p className="text-xl font-bold text-white">{activeListings.length}</p>
+                  </div>
+                  <div className="bg-slate-700/50 rounded-xl p-4 text-center">
+                    <p className="text-gray-400 text-sm mb-1">Difference</p>
+                    <p className="text-xl font-bold text-purple-400">
+                      {formatCurrency((activeListings.reduce((a, b) => a + b.price, 0) / activeListings.length - stats.average)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Price Alert */}
+            <div className="bg-slate-800/90 rounded-2xl p-6 border border-slate-700/50 mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Bell className="w-5 h-5 text-amber-400" />
+                <h3 className="text-lg font-bold text-white">Price Alert</h3>
+              </div>
+              <div className="flex flex-wrap gap-4 items-end">
+                <div className="flex-1 min-w-48">
+                  <label className="block text-gray-400 text-sm mb-1">Email</label>
+                  <input type="email" value={alertEmail} onChange={(e) => setAlertEmail(e.target.value)} placeholder="your@email.com" className="w-full px-4 py-3 bg-slate-700/50 rounded-xl text-white placeholder-gray-400 border border-slate-600/50 focus:outline-none focus:border-purple-500/70" />
+                </div>
+                <div className="w-32">
+                  <label className="block text-gray-400 text-sm mb-1">Target Price</label>
+                  <input type="number" value={alertTarget} onChange={(e) => setAlertTarget(e.target.value)} placeholder="0.00" className="w-full px-4 py-3 bg-slate-700/50 rounded-xl text-white placeholder-gray-400 border border-slate-600/50 focus:outline-none focus:border-purple-500/70" />
+                </div>
+                <button onClick={saveAlert} className="px-6 py-3 bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-amber-500/25 transition-all">
+                  {alertSaved ? '✓ Saved!' : 'Notify Me'}
+                </button>
+              </div>
+            </div>
+
+            {/* Sold Listings */}
             <div className="bg-slate-800/90 rounded-3xl p-6 border border-slate-700/50">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-100 flex items-center gap-2">
@@ -408,45 +507,18 @@ function HomeContent() {
                 </h2>
                 <span className="text-gray-300 font-medium">{stats.count} {t.stats.itemsAnalyzed}</span>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {priceData.slice(0, 12).map((item, i) => (
-                  <motion.a
-                    key={i}
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 + i * 0.05 }}
-                    className="group block bg-slate-700/50 rounded-xl p-4 hover:bg-slate-700 transition-all hover:scale-[1.02] border border-slate-600/50"
-                  >
+                  <motion.a key={i} href={item.url} target="_blank" rel="noopener noreferrer" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + i * 0.05 }} className="group block bg-slate-700/50 rounded-xl p-4 hover:bg-slate-700 transition-all hover:scale-[1.02] border border-slate-600/50">
                     <div className="flex gap-4">
-                      {item.image && (
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><rect fill="%23f5f5f5" width="80" height="80"/><text x="40" y="45" text-anchor="middle" fill="%23999" font-size="10">No Image</text></svg>';
-                          }}
-                        />
-                      )}
+                      {item.image && <img src={item.image} alt={item.title} className="w-20 h-20 object-cover rounded-lg flex-shrink-0" onError={(e) => { e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"/><rect fill="%23f5f5f5" width="80" height="80"/><text x="40" y="45" text-anchor="middle" fill="%23999" font-size="10">No Image</text></svg>'; }} />}
                       <div className="flex-1 min-w-0">
-                        <p className="text-gray-200 font-medium text-sm line-clamp-2 mb-2">
-                          {item.title}
-                        </p>
+                        <p className="text-gray-200 font-medium text-sm line-clamp-2 mb-2">{item.title}</p>
                         <div className="flex items-center justify-between">
-                          <span className="text-xl font-bold text-emerald-400">
-                            {formatCurrency(item.price)}
-                          </span>
-                          <span className="text-xs text-gray-300 bg-slate-600/80 px-2 py-1 rounded-full">
-                            {item.condition}
-                          </span>
+                          <span className="text-xl font-bold text-emerald-400">{formatCurrency(item.price)}</span>
+                          <span className="text-xs text-gray-300 bg-slate-600/80 px-2 py-1 rounded-full">{item.condition}</span>
                         </div>
-                        <p className="text-gray-400 text-xs mt-1">
-                          Sold {item.soldDate}
-                        </p>
+                        <p className="text-gray-400 text-xs mt-1">Sold {item.soldDate}</p>
                       </div>
                     </div>
                   </motion.a>
@@ -457,15 +529,10 @@ function HomeContent() {
         )}
       </AnimatePresence>
 
-      {/* Error State */}
+      {/* Error */}
       <AnimatePresence>
         {error && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="relative z-10 max-w-xl mx-auto px-6"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="relative z-10 max-w-xl mx-auto px-6">
             <div className="bg-slate-800/90 rounded-2xl p-6 border border-red-500/50">
               <p className="text-red-300 text-center font-medium">{error}</p>
             </div>
@@ -475,9 +542,7 @@ function HomeContent() {
 
       {/* Footer */}
       <footer className="relative z-10 text-center py-12">
-        <p className="text-gray-300 text-sm">
-          {t.footer.credit}
-        </p>
+        <p className="text-gray-300 text-sm">{t.footer.credit}</p>
       </footer>
     </div>
   );
