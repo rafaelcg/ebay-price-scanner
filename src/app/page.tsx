@@ -10,6 +10,7 @@ import {
   TrendingUp, 
   TrendingDown, 
   DollarSign,
+  Globe,
   Package,
   Sparkles,
   Zap,
@@ -35,8 +36,16 @@ interface PriceStats {
   median: number;
 }
 
+const MARKETPLACES = [
+  { id: 'GB', name: 'UK', currency: 'GBP', flag: '🇬🇧' },
+  { id: 'US', name: 'US', currency: 'USD', flag: '🇺🇸' },
+  { id: 'CA', name: 'Canada', currency: 'CAD', flag: '🇨🇦' },
+  { id: 'AU', name: 'Australia', currency: 'AUD', flag: '🇦🇺' },
+];
+
 export default function Home() {
   const [searchMode, setSearchMode] = useState<'barcode' | 'text'>('barcode');
+  const [marketplace, setMarketplace] = useState(MARKETPLACES[0]); // Default to UK
   const [query, setQuery] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -152,7 +161,7 @@ export default function Home() {
     setHasSearched(true);
 
     try {
-      const response = await fetch(`/api/ebay?q=${encodeURIComponent(searchQuery)}`);
+      const response = await fetch(`/api/ebay?q=${encodeURIComponent(searchQuery)}&marketplace=${marketplace.id}`);
 
       const data = await response.json();
 
@@ -184,7 +193,7 @@ export default function Home() {
   const formatCurrency = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: marketplace.currency,
     }).format(price);
   };
 
@@ -206,7 +215,18 @@ export default function Home() {
             <span className="text-xl font-bold text-white">PriceScan</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-200 hidden sm:block">Powered by eBay Sold Data</span>
+            {/* Marketplace Selector */}
+            <select
+              value={marketplace.id}
+              onChange={(e) => setMarketplace(MARKETPLACES.find(m => m.id === e.target.value) || MARKETPLACES[0])}
+              className="bg-slate-800/90 text-gray-200 text-sm rounded-lg px-3 py-2 border border-slate-700/50 focus:outline-none focus:border-purple-500/70 cursor-pointer"
+            >
+              {MARKETPLACES.map((mp) => (
+                <option key={mp.id} value={mp.id}>
+                  {mp.flag} {mp.name} ({mp.currency})
+                </option>
+              ))}
+            </select>
           </div>
         </nav>
 

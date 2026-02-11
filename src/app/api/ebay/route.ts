@@ -140,6 +140,7 @@ function calculateStats(listings: any[]): any {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get('q');
+  const marketplace = searchParams.get('marketplace') || 'GB';
 
   if (!query) {
     return NextResponse.json(
@@ -149,25 +150,16 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Check if we have API credentials
-    if (!EBAY_APP_ID || !EBAY_CERT_ID) {
-      return NextResponse.json({
-        error: 'eBay API credentials not configured',
-        note: 'Add EBAY_APP_ID and EBAY_CERT_ID to .env file',
-      }, { status: 500 });
-    }
-
-    // Get OAuth token
-    const accessToken = await getAccessToken();
+    // Get marketplace ID
+    const marketplaceId = MARKETPLACE_IDS[marketplace] || MARKETPLACE_IDS['GB'];
 
     // Search for sold items using Browse API (relevance by default)
-    // Using UK marketplace for GBP prices
     const searchUrl = `${EBAY_API_BASE}/buy/browse/v1/item_summary/search?q=${encodeURIComponent(query)}&filter=buyingOptions:FIXED_PRICE,soldItemsOnly:true&limit=50`;
 
     const response = await fetch(searchUrl, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_GB',
+        'X-EBAY-C-MARKETPLACE-ID': marketplaceId,
       },
     });
 
