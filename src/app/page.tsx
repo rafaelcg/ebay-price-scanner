@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Barcode, 
@@ -16,6 +16,7 @@ import {
   Zap,
   Shield
 } from 'lucide-react';
+import { LanguageProvider, useLanguage, MARKETPLACES } from './LanguageContext';
 
 interface PriceData {
   title: string;
@@ -36,16 +37,9 @@ interface PriceStats {
   median: number;
 }
 
-const MARKETPLACES = [
-  { id: 'GB', name: 'UK', currency: 'GBP', flag: '🇬🇧' },
-  { id: 'US', name: 'US', currency: 'USD', flag: '🇺🇸' },
-  { id: 'CA', name: 'Canada', currency: 'CAD', flag: '🇨🇦' },
-  { id: 'AU', name: 'Australia', currency: 'AUD', flag: '🇦🇺' },
-];
-
-export default function Home() {
-  const [searchMode, setSearchMode] = useState<'barcode' | 'text'>('barcode');
-  const [marketplace, setMarketplace] = useState(MARKETPLACES[0]); // Default to UK
+function HomeContent() {
+  const { t, locale, setLocale, marketplace, setMarketplace } = useLanguage();
+  const [searchMode, setSearchMode] = useState<'barcode' | 'text'>('text');
   const [query, setQuery] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -66,7 +60,6 @@ export default function Home() {
   // Auto-scroll to results only once after search completes
   useEffect(() => {
     if (priceData.length > 0 && stats && hasSearched && !isSearching && resultsRef.current) {
-      // Scroll once, then reset the flag so it won't scroll again
       resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setHasSearched(false);
     }
@@ -91,14 +84,6 @@ export default function Home() {
     };
   }, []);
 
-  // Handle camera stream when scanning starts
-  useEffect(() => {
-    if (isScanning && streamRef.current && videoRef.current) {
-      videoRef.current.srcObject = streamRef.current;
-      videoRef.current.play().catch(err => console.error('Video play error:', err));
-    }
-  }, [isScanning]);
-
   const startScanning = async () => {
     try {
       setError('');
@@ -108,7 +93,6 @@ export default function Home() {
       streamRef.current = stream;
       setIsScanning(true);
 
-      // Start continuous scanning after state updates
       setTimeout(() => {
         if (codeReaderRef.current && videoRef.current) {
           codeReaderRef.current.decodeFromVideoDevice(
@@ -130,7 +114,7 @@ export default function Home() {
         }
       }, 100);
     } catch (err) {
-      setError('Camera access denied. Please allow camera permissions.');
+      setError(t.errors.cameraDenied);
       setIsScanning(false);
     }
   };
@@ -162,21 +146,20 @@ export default function Home() {
 
     try {
       const response = await fetch(`/api/ebay?q=${encodeURIComponent(searchQuery)}&marketplace=${marketplace.id}`);
-
       const data = await response.json();
 
       if (response.ok && data.listings && data.listings.length > 0) {
         setPriceData(data.listings);
         setStats(data.stats);
       } else if (response.ok && data.listings?.length === 0) {
-        setError('No sold listings found for this product. Try a different search.');
+        setError(t.listings.noResults);
       } else if (data.error) {
         setError(data.details || data.error);
       } else {
         throw new Error('Failed to fetch prices');
       }
     } catch (err) {
-      setError('Failed to fetch eBay data. Please try again.');
+      setError(t.errors.apiError);
       console.error(err);
     } finally {
       isSearchingRef.current = false;
@@ -191,7 +174,14 @@ export default function Home() {
   };
 
   const formatCurrency = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
+    const localeMap: Record<string, string> = {
+      'pt-BR': 'pt-BR',
+      'es': 'es',
+      'fr': 'fr',
+      'it': 'it',
+      'en': 'en-US',
+    };
+    return new Intl.NumberFormat(localeMap[locale] || 'en-US', {
       style: 'currency',
       currency: marketplace.currency,
     }).format(price);
@@ -212,9 +202,27 @@ export default function Home() {
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
               <DollarSign className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-white">PriceScan</span>
+            <span className="text-xl font-bold text-white">{t.app.title}</span>
           </div>
           <div className="flex items-center gap-4">
+            {/* Language Selector */}
+            <select
+              value={locale}
+              onChange={(e) => setLocale(e.target.value as any)}
+              className="bg-slate-800/90 text-gray-200 text-sm rounded-lg px-3 py-2 border border-slate-700/50 focus:outline-none focus:border-purple-500/70 cursor-pointer"
+            >
+              {[
+                {id: 'en', flag: '🇺🇸'},
+                {id: 'pt-BR', flag: '🇧🇷'},
+                {id: 'es', flag: '🇪🇸'},
+                {id: 'fr', flag: '🇫🇷'},
+                {id: 'it', flag: '🇮🇹'},
+              ].map((lang) => (
+                <option key={lang.id} value={lang.id}>
+                  {lang.flag} {lang.id}
+                </option>
+              ))}
+            </select>
             {/* Marketplace Selector */}
             <select
               value={marketplace.id}
@@ -238,12 +246,10 @@ export default function Home() {
             transition={{ duration: 0.6 }}
           >
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 text-balance">
-              Know What It's
-              <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent"> Really Worth</span>
+              {t.app.tagline}
             </h1>
             <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
-              Scan any barcode or search any product to instantly see eBay sold prices.
-              Min, max, average, and median market values — all in one tap.
+              {t.app.subtitle}
             </p>
           </motion.div>
 
@@ -275,7 +281,7 @@ export default function Home() {
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder={searchMode === 'barcode' ? 'Or type product name...' : 'Search any product...'}
+                    placeholder={searchMode === 'barcode' ? t.app.orType : t.app.searchPlaceholder}
                     className="w-full px-12 py-4 bg-slate-700/50 rounded-xl text-gray-200 placeholder-gray-400 border border-slate-600/50 focus:outline-none focus:border-purple-500/70 focus:bg-slate-700 transition-all"
                   />
                 </div>
@@ -287,7 +293,7 @@ export default function Home() {
                   {isLoading ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
-                    'Search'
+                    t.app.searchButton
                   )}
                 </button>
               </form>
@@ -304,7 +310,7 @@ export default function Home() {
                 }`}
               >
                 <Barcode className="w-4 h-4" />
-                Barcode
+                {t.app.modeBarcode}
               </button>
               <button
                 onClick={() => setSearchMode('text')}
@@ -315,7 +321,7 @@ export default function Home() {
                 }`}
               >
                 <Search className="w-4 h-4" />
-                Text Search
+                {t.app.modeText}
               </button>
             </div>
           </motion.div>
@@ -341,18 +347,14 @@ export default function Home() {
                 {/* Scanner Overlay */}
                 <div className="absolute inset-0 scanner-overlay flex items-center justify-center">
                   <div className="relative w-72 h-72">
-                    {/* Corner Borders */}
                     <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-blue-500 rounded-tl-xl" />
                     <div className="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-blue-500 rounded-tr-xl" />
                     <div className="absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 border-blue-500 rounded-bl-xl" />
                     <div className="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-blue-500 rounded-br-xl" />
-                    
-                    {/* Scanning Line */}
                     <div className="scanner-line top-0" />
                   </div>
                 </div>
                 
-                {/* Close Button */}
                 <button
                   onClick={stopScanning}
                   className="absolute top-6 right-6 p-3 bg-white/10 backdrop-blur rounded-full text-white hover:bg-white/20 transition-all"
@@ -360,9 +362,8 @@ export default function Home() {
                   <X className="w-6 h-6" />
                 </button>
                 
-                {/* Instructions */}
                 <p className="absolute bottom-24 left-0 right-0 text-center text-white/80 text-lg">
-                  Point camera at a barcode
+                  {t.app.pointCamera}
                 </p>
               </motion.div>
             )}
@@ -374,9 +375,9 @@ export default function Home() {
       <section className="relative z-10 max-w-6xl mx-auto px-6 -mt-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { icon: Zap, title: 'Instant Results', desc: 'Real-time eBay sold data' },
-            { icon: Shield, title: 'Accurate Data', desc: 'Millions of sales analyzed' },
-            { icon: Sparkles, title: 'Easy to Use', desc: 'Scan or search instantly' },
+            { icon: Zap, ...t.features.instant },
+            { icon: Shield, ...t.features.accurate },
+            { icon: Sparkles, ...t.features.easy },
           ].map((feature, i) => (
             <motion.div
               key={i}
@@ -407,44 +408,26 @@ export default function Home() {
           >
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1 }}
-                className="bg-slate-800/90 rounded-2xl p-6 text-center border border-slate-700/50"
-              >
-                <p className="text-gray-300 text-sm mb-2 font-semibold tracking-wide">AVERAGE</p>
-                <p className="text-2xl md:text-3xl font-bold text-emerald-400">{formatCurrency(stats.average)}</p>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
-                className="bg-slate-800/90 rounded-2xl p-6 text-center border border-slate-700/50"
-              >
-                <p className="text-gray-300 text-sm mb-2 font-semibold tracking-wide">MEDIAN</p>
-                <p className="text-2xl md:text-3xl font-bold text-sky-400">{formatCurrency(stats.median)}</p>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.3 }}
-                className="bg-slate-800/90 rounded-2xl p-6 text-center border border-slate-700/50"
-              >
-                <p className="text-gray-300 text-sm mb-2 font-semibold tracking-wide">LOWEST</p>
-                <p className="text-2xl md:text-3xl font-bold text-red-400">{formatCurrency(stats.min)}</p>
-                <TrendingDown className="w-5 h-5 text-red-400 mx-auto mt-2" />
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.4 }}
-                className="bg-slate-800/90 rounded-2xl p-6 text-center border border-slate-700/50"
-              >
-                <p className="text-gray-300 text-sm mb-2 font-semibold tracking-wide">HIGHEST</p>
-                <p className="text-2xl md:text-3xl font-bold text-purple-400">{formatCurrency(stats.max)}</p>
-                <TrendingUp className="w-5 h-5 text-purple-400 mx-auto mt-2" />
-              </motion.div>
+              {[
+                { key: 'average', label: t.stats.average, value: stats.average, color: 'emerald' },
+                { key: 'median', label: t.stats.median, value: stats.median, color: 'sky' },
+                { key: 'lowest', label: t.stats.lowest, value: stats.min, color: 'red', icon: TrendingDown },
+                { key: 'highest', label: t.stats.highest, value: stats.max, color: 'purple', icon: TrendingUp },
+              ].map((stat, i) => (
+                <motion.div
+                  key={stat.key}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.1 + i * 0.1 }}
+                  className="bg-slate-800/90 rounded-2xl p-6 text-center border border-slate-700/50"
+                >
+                  <p className="text-gray-300 text-sm mb-2 font-semibold tracking-wide">{stat.label}</p>
+                  <p className={`text-2xl md:text-3xl font-bold text-${stat.color}-400`}>
+                    {formatCurrency(stat.value)}
+                  </p>
+                  {stat.icon && <stat.icon className={`w-5 h-5 text-${stat.color}-400 mx-auto mt-2`} />}
+                </motion.div>
+              ))}
             </div>
 
             {/* Listings */}
@@ -452,9 +435,9 @@ export default function Home() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-100 flex items-center gap-2">
                   <Package className="w-5 h-5 text-gray-300" />
-                  Recent Sold Listings
+                  {t.listings.title}
                 </h2>
-                <span className="text-gray-300 font-medium">{stats.count} items analyzed</span>
+                <span className="text-gray-300 font-medium">{stats.count} {t.stats.itemsAnalyzed}</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -514,7 +497,7 @@ export default function Home() {
             exit={{ opacity: 0, y: 20 }}
             className="relative z-10 max-w-xl mx-auto px-6"
           >
-            <div className="glass rounded-2xl p-6 border-red-500/50">
+            <div className="bg-slate-800/90 rounded-2xl p-6 border border-red-500/50">
               <p className="text-red-300 text-center font-medium">{error}</p>
             </div>
           </motion.div>
@@ -524,9 +507,17 @@ export default function Home() {
       {/* Footer */}
       <footer className="relative z-10 text-center py-12">
         <p className="text-gray-300 text-sm">
-          Data sourced from eBay sold listings • Results may vary
+          {t.footer.credit}
         </p>
       </footer>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <LanguageProvider>
+      <HomeContent />
+    </LanguageProvider>
   );
 }
