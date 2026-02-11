@@ -45,20 +45,59 @@ const CONDITION_MAP: Record<string, string> = {
 
 // Transform eBay API response to our format
 function transformListings(items: any[], query: string): any[] {
-  return items.map((item: any) => ({
-    title: item.title,
-    image: item.image?.imageUrl || null,
-    soldDate: new Date(item.soldDate || Date.now()).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }),
-    price: item.price?.value || 0,
-    soldPrice: item.price?.value || 0,
-    currency: item.price?.currency || 'USD',
-    condition: CONDITION_MAP[item.condition] || 'Unknown',
-    url: item.itemWebUrl || `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}`,
-  }));
+  return items.map((item: any) => {
+    // Debug: log the structure (remove in production)
+    console.log('Item structure:', JSON.stringify(item, null, 2).substring(0, 500));
+
+    // Handle different price formats
+    let price = 0;
+    if (item.price?.value) {
+      price = parseFloat(item.price.value);
+    } else if (item.currentPrice?.value) {
+      price = parseFloat(item.currentPrice.value);
+    } else if (typeof item.price === 'number') {
+      price = item.price;
+    }
+
+    // Handle condition
+    let condition = 'Unknown';
+    if (item.condition) {
+      if (typeof item.condition === 'string') {
+        condition = item.condition;
+      } else if (item.condition?.conditionId) {
+        condition = CONDITION_MAP[item.condition.conditionId] || 'Unknown';
+      }
+    }
+
+    // Handle image
+    let image = null;
+    if (item.image?.imageUrl) {
+      image = item.image.imageUrl;
+    } else if (item.thumbnailImages?.[0]?.imageUrl) {
+      image = item.thumbnailImages[0].imageUrl;
+    }
+
+    return {
+      title: item.title,
+      image,
+      soldDate: item.soldDate
+        ? new Date(item.soldDate).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          })
+        : new Date().toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }),
+      price,
+      soldPrice: price,
+      currency: item.price?.currency || 'USD',
+      condition,
+      url: item.itemWebUrl || item.webUrl || `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}`,
+    };
+  });
 }
 
 function calculateStats(listings: any[]): any {
@@ -125,8 +164,12 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
+    console.log('eBay API response:', JSON.stringify(data, null, 2).substring(0, 1000));
 
-    if (!data.itemSummaries || data.itemSummaries.length === 0) {
+    // Check for different response structures
+    const items = data.itemSummaries || data.items || data.searchResult?.[0]?.item || [];
+
+    if (!items || items.length === 0) {
       return NextResponse.json({
         query,
         listings: [],
@@ -135,7 +178,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const listings = transformListings(data.itemSummaries, query);
+    const listings = transformListings(items, query);
+    console.log('Transformed listings:', listings.length, 'items, prices:', listings.slice(0, 3).map(l => l.price));
     const stats = calculateStats(listings);
 
     return NextResponse.json({
