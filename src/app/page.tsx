@@ -152,20 +152,19 @@ export default function Home() {
     setHasSearched(true);
 
     try {
-      // Use eBay Finding API or fallback to mock data for demo
       const response = await fetch(`/api/ebay?q=${encodeURIComponent(searchQuery)}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch prices');
-      }
 
       const data = await response.json();
-      
-      if (data.listings && data.listings.length > 0) {
+
+      if (response.ok && data.listings && data.listings.length > 0) {
         setPriceData(data.listings);
         setStats(data.stats);
-      } else {
+      } else if (response.ok && data.listings?.length === 0) {
         setError('No sold listings found for this product. Try a different search.');
+      } else if (data.error) {
+        setError(data.details || data.error);
+      } else {
+        throw new Error('Failed to fetch prices');
       }
     } catch (err) {
       setError('Failed to fetch eBay data. Please try again.');
