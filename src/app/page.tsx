@@ -3,56 +3,28 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Barcode, 
-  Search, 
-  X, 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign,
-  Package,
-  Sparkles,
-  Zap,
-  Shield,
-  Bell,
-  Clock,
-  Filter,
-  TrendingRight
+  Barcode, Search, X, TrendingUp, TrendingDown, DollarSign,
+  Package, Bell, Clock, TrendingRight
 } from 'lucide-react';
 import { LanguageProvider, useLanguage, MARKETPLACES } from './LanguageContext';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
+  Chart as ChartJS, CategoryScale, LinearScale, PointElement,
+  LineElement, Title, Tooltip, Legend, Filler
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 interface PriceData {
   title: string;
   image: string;
   soldDate: string;
+  soldDateRaw?: string;
   price: number;
   soldPrice: number;
   currency: string;
   condition: string;
   url: string;
-  soldDateRaw?: string;
 }
 
 interface PriceStats {
@@ -68,21 +40,14 @@ interface ActiveListing {
   image: string;
   price: number;
   currency: string;
-  url: string;
   condition: string;
+  url: string;
 }
 
 interface PriceHistoryPoint {
   date: string;
   avgPrice: number;
   count: number;
-}
-
-interface Alert {
-  email: string;
-  product: string;
-  targetPrice: number;
-  marketplace: string;
 }
 
 const CONDITIONS = [
@@ -197,7 +162,6 @@ function HomeContent() {
     setHasSearched(true);
 
     try {
-      // Fetch sold listings
       const soldRes = await fetch(
         `/api/ebay?q=${encodeURIComponent(searchQuery)}&marketplace=${marketplace.id}&condition=${selectedCondition}`
       );
@@ -210,7 +174,6 @@ function HomeContent() {
         setError(t.listings.noResults);
       }
 
-      // Fetch active listings
       const activeRes = await fetch(
         `/api/ebay/active?q=${encodeURIComponent(searchQuery)}&marketplace=${marketplace.id}`
       );
@@ -219,10 +182,8 @@ function HomeContent() {
         setActiveListings(activeData.listings);
       }
 
-      // Generate mock price history (in production, fetch from API)
       const history = generatePriceHistory(soldData.listings || []);
       setPriceHistory(history);
-
     } catch (err) {
       setError(t.errors.apiError);
       console.error(err);
@@ -236,7 +197,6 @@ function HomeContent() {
   const generatePriceHistory = (listings: PriceData[]): PriceHistoryPoint[] => {
     if (listings.length === 0) return [];
     
-    // Group by date and calculate averages
     const grouped: Record<string, { sum: number; count: number }> = {};
     listings.forEach(item => {
       if (item.soldDateRaw) {
@@ -250,7 +210,7 @@ function HomeContent() {
 
     return Object.entries(grouped)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .slice(-30) // Last 30 data points
+      .slice(-30)
       .map(([date, data]) => ({
         date,
         avgPrice: Math.round(data.sum / data.count),
@@ -261,7 +221,7 @@ function HomeContent() {
   const saveAlert = () => {
     if (!alertEmail || !alertTarget) return;
     
-    const alerts: Alert[] = JSON.parse(localStorage.getItem('priceAlerts') || '[]');
+    const alerts = JSON.parse(localStorage.getItem('priceAlerts') || '[]');
     alerts.push({
       email: alertEmail,
       product: query,
@@ -285,6 +245,13 @@ function HomeContent() {
     }).format(price);
   };
 
+  const formatCurrencySimple = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: marketplace.currency,
+    }).format(price);
+  };
+
   const chartData = {
     labels: priceHistory.map(p => p.date),
     datasets: [
@@ -301,24 +268,23 @@ function HomeContent() {
 
   const chartOptions = {
     responsive: true,
-    plugins: {
-      legend: { display: false },
-    },
+    plugins: { legend: { display: false } },
     scales: {
       x: { display: false },
       y: {
-        ticks: {
-          callback: (value: any) => formatCurrency(value),
-          color: '#9ca3af'
-        },
+        ticks: { callback: (value: any) => formatCurrencySimple(value), color: '#9ca3af' },
         grid: { color: 'rgba(255,255,255,0.05)' }
       }
     }
   };
 
+  const activeAvg = activeListings.length > 0 
+    ? activeListings.reduce((a, b) => a + b.price, 0) / activeListings.length 
+    : 0;
+  const priceDiff = stats ? activeAvg - stats.average : 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Hero */}
       <header className="relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-3xl animate-pulse-slow" />
@@ -362,13 +328,10 @@ function HomeContent() {
 
         <div className="relative z-10 max-w-4xl mx-auto px-6 pt-12 pb-24 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 text-balance">
-              {t.app.tagline}
-            </h1>
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 text-balance">{t.app.tagline}</h1>
             <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">{t.app.subtitle}</p>
           </motion.div>
 
-          {/* Search */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="max-w-2xl mx-auto">
             <div className="bg-slate-800/90 rounded-2xl p-2 border border-slate-700/50">
               <form onSubmit={(e) => { e.preventDefault(); searchPrices(query); }} className="flex items-center gap-2">
@@ -390,7 +353,6 @@ function HomeContent() {
           </motion.div>
         </div>
 
-        {/* Camera Preview */}
         <AnimatePresence>
           {isScanning && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black">
@@ -411,12 +373,10 @@ function HomeContent() {
         </AnimatePresence>
       </header>
 
-      {/* Results */}
       <AnimatePresence>
         {priceData.length > 0 && stats && (
           <motion.section ref={resultsRef} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }} className="relative z-10 max-w-6xl mx-auto px-6 py-16">
             
-            {/* Price History Chart */}
             {priceHistory.length > 0 && (
               <div className="bg-slate-800/90 rounded-2xl p-6 border border-slate-700/50 mb-8">
                 <div className="flex items-center gap-2 mb-4">
@@ -429,7 +389,6 @@ function HomeContent() {
               </div>
             )}
 
-            {/* Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               {[
                 { key: 'average', label: t.stats.average, value: stats.average, color: 'emerald' },
@@ -439,13 +398,12 @@ function HomeContent() {
               ].map((stat, i) => (
                 <motion.div key={stat.key} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 + i * 0.1 }} className="bg-slate-800/90 rounded-2xl p-6 text-center border border-slate-700/50">
                   <p className="text-gray-300 text-sm mb-2 font-semibold tracking-wide">{stat.label}</p>
-                  <p className={`text-2xl md:text-3xl font-bold text-${stat.color}-400`}>{formatCurrency(stat.value)}</p>
+                  <p className={`text-2xl md:text-3xl font-bold text-${stat.color}-400`}>{formatCurrencySimple(stat.value)}</p>
                   {stat.icon && <stat.icon className={`w-5 h-5 text-${stat.color}-400 mx-auto mt-2`} />}
                 </motion.div>
               ))}
             </div>
 
-            {/* Active vs Sold Comparison */}
             {activeListings.length > 0 && (
               <div className="bg-slate-800/90 rounded-2xl p-6 border border-slate-700/50 mb-8">
                 <div className="flex items-center gap-2 mb-4">
@@ -455,13 +413,11 @@ function HomeContent() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-slate-700/50 rounded-xl p-4 text-center">
                     <p className="text-gray-400 text-sm mb-1">Active Avg</p>
-                    <p className="text-xl font-bold text-blue-400">
-                      {formatCurrency(activeListings.reduce((a, b) => a + b.price, 0) / activeListings.length)}
-                    </p>
+                    <p className="text-xl font-bold text-blue-400">{formatCurrencySimple(activeAvg)}</p>
                   </div>
                   <div className="bg-slate-700/50 rounded-xl p-4 text-center">
                     <p className="text-gray-400 text-sm mb-1">Sold Avg</p>
-                    <p className="text-xl font-bold text-emerald-400">{formatCurrency(stats.average)}</p>
+                    <p className="text-xl font-bold text-emerald-400">{formatCurrencySimple(stats.average)}</p>
                   </div>
                   <div className="bg-slate-700/50 rounded-xl p-4 text-center">
                     <p className="text-gray-400 text-sm mb-1">Active Items</p>
@@ -469,15 +425,12 @@ function HomeContent() {
                   </div>
                   <div className="bg-slate-700/50 rounded-xl p-4 text-center">
                     <p className="text-gray-400 text-sm mb-1">Difference</p>
-                    <p className="text-xl font-bold text-purple-400">
-                      {formatCurrency((activeListings.reduce((a, b) => a + b.price, 0) / activeListings.length - stats.average)}
-                    </p>
+                    <p className="text-xl font-bold text-purple-400">{formatCurrencySimple(priceDiff)}</p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Price Alert */}
             <div className="bg-slate-800/90 rounded-2xl p-6 border border-slate-700/50 mb-8">
               <div className="flex items-center gap-2 mb-4">
                 <Bell className="w-5 h-5 text-amber-400" />
@@ -498,7 +451,6 @@ function HomeContent() {
               </div>
             </div>
 
-            {/* Sold Listings */}
             <div className="bg-slate-800/90 rounded-3xl p-6 border border-slate-700/50">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-100 flex items-center gap-2">
@@ -515,7 +467,7 @@ function HomeContent() {
                       <div className="flex-1 min-w-0">
                         <p className="text-gray-200 font-medium text-sm line-clamp-2 mb-2">{item.title}</p>
                         <div className="flex items-center justify-between">
-                          <span className="text-xl font-bold text-emerald-400">{formatCurrency(item.price)}</span>
+                          <span className="text-xl font-bold text-emerald-400">{formatCurrencySimple(item.price)}</span>
                           <span className="text-xs text-gray-300 bg-slate-600/80 px-2 py-1 rounded-full">{item.condition}</span>
                         </div>
                         <p className="text-gray-400 text-xs mt-1">Sold {item.soldDate}</p>
@@ -529,7 +481,6 @@ function HomeContent() {
         )}
       </AnimatePresence>
 
-      {/* Error */}
       <AnimatePresence>
         {error && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="relative z-10 max-w-xl mx-auto px-6">
@@ -540,7 +491,6 @@ function HomeContent() {
         )}
       </AnimatePresence>
 
-      {/* Footer */}
       <footer className="relative z-10 text-center py-12">
         <p className="text-gray-300 text-sm">{t.footer.credit}</p>
       </footer>
