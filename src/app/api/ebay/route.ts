@@ -9,6 +9,19 @@ const EBAY_API_BASE = EBAY_ENVIRONMENT === 'sandbox'
   ? 'https://api.sandbox.ebay.com'
   : 'https://api.ebay.com';
 
+// Marketplace ID mapping
+const MARKETPLACE_IDS: Record<string, string> = {
+  'US': 'EBAY_US',
+  'GB': 'EBAY_GB',
+  'CA': 'EBAY_CA',
+  'AU': 'EBAY_AU',
+  'DE': 'EBAY_DE',
+  'FR': 'EBAY_FR',
+};
+
+// Default to UK if not specified
+const DEFAULT_MARKETPLACE = MARKETPLACE_IDS['GB'];
+
 // Get OAuth access token using client credentials flow
 async function getAccessToken(): Promise<string> {
   const credentials = Buffer.from(`${EBAY_APP_ID}:${EBAY_CERT_ID}`).toString('base64');
@@ -148,12 +161,13 @@ export async function GET(request: NextRequest) {
     const accessToken = await getAccessToken();
 
     // Search for sold items using Browse API (relevance by default)
+    // Using UK marketplace for GBP prices
     const searchUrl = `${EBAY_API_BASE}/buy/browse/v1/item_summary/search?q=${encodeURIComponent(query)}&filter=buyingOptions:FIXED_PRICE,soldItemsOnly:true&limit=50`;
 
     const response = await fetch(searchUrl, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_GB',
       },
     });
 
