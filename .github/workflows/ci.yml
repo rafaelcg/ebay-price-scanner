@@ -25,12 +25,17 @@ jobs:
           EBAY_CERT_ID: ${{ secrets.EBAY_CERT_ID }}
           EBAY_DEV_ID: ${{ secrets.EBAY_DEV_ID }}
           EBAY_ENVIRONMENT: ${{ secrets.EBAY_ENVIRONMENT }}
-      
-      - name: Report Status
-        if: always()
-        run: |
-          if [ "${{ job.status }}" = "failure" ]; then
-            echo "::warning::Build failed! Check GitHub Actions for details."
-          else
-            echo "::notice::Build passed ✓"
-          fi
+
+      - name: Notify on failure
+        if: failure()
+        uses: appleboy/telegram-action@v0.1.1
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            🚨 *eBay Price Scanner Build Failed*
+            
+            Branch: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            
+            Check logs: ${{ github.run_url }}
