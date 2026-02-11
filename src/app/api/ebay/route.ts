@@ -73,27 +73,6 @@ function transformSold(item: any, query: string) {
   };
 }
 
-function transformActive(item: any) {
-  let price = 0;
-  if (item.price?.value) price = parseFloat(item.price.value);
-  else if (item.currentPrice?.value) price = parseFloat(item.currentPrice.value);
-
-  let condition = 'Unknown';
-  if (item.condition) {
-    if (typeof item.condition === 'string') condition = item.condition;
-    else if (item.condition?.conditionId) condition = CONDITION_MAP[item.condition.conditionId] || 'Unknown';
-  }
-
-  return {
-    title: item.title,
-    image: item.image?.imageUrl || item.thumbnailImages?.[0]?.imageUrl || null,
-    price,
-    currency: item.price?.currency || 'USD',
-    condition,
-    url: item.itemWebUrl || item.webUrl || '#',
-  };
-}
-
 function calculateStats(listings: any[]) {
   const prices = listings.map(l => l.price).filter(p => p > 0).sort((a, b) => a - b);
   if (prices.length === 0) return { min: 0, max: 0, average: 0, median: 0, count: 0 };
@@ -115,28 +94,81 @@ export async function GET(request: NextRequest) {
   const query = searchParams.get('q') || '';
   const marketplace = searchParams.get('marketplace') || 'GB';
   const condition = searchParams.get('condition') || 'all';
+  const useMock = searchParams.get('mock') === 'true';
 
   if (!query) return NextResponse.json({ error: 'Query required' }, { status: 400 });
 
+  // Use mock data if requested
+  if (useMock || !EBAY_APP_ID || !EBAY_CERT_ID) {
+    const mockListings = [
+      {
+        title: `${query} - Excellent Condition`,
+        image: null,
+        soldDate: 'Feb 5, 2026',
+        soldDateRaw: '2026-02-05',
+        price: 45.00,
+        soldPrice: 45.00,
+        currency: marketplace === 'PT' ? 'BRL' : marketplace === 'GB' ? 'GBP' : marketplace === 'AU' ? 'AUD' : 'USD',
+        condition: 'Used - Very Good',
+        url: 'https://www.ebay.com/itm/mock1'
+      },
+      {
+        title: `${query} - Good Condition`,
+        image: null,
+        soldDate: 'Feb 3, 2026',
+        soldDateRaw: '2026-02-03',
+        price: 38.50,
+        soldPrice: 38.50,
+        currency: marketplace === 'PT' ? 'BRL' : marketplace === 'GB' ? 'GBP' : marketplace === 'AU' ? 'AUD' : 'USD',
+        condition: 'Used - Good',
+        url: 'https://www.ebay.com/itm/mock2'
+      },
+      {
+        title: `New ${query} - Sealed`,
+        image: null,
+        soldDate: 'Feb 1, 2026',
+        soldDateRaw: '2026-02-01',
+        price: 65.00,
+        soldPrice: 65.00,
+        currency: marketplace === 'PT' ? 'BRL' : marketplace === 'GB' ? 'GBP' : marketplace === 'AU' ? 'AUD' : 'USD',
+        condition: 'New',
+        url: 'https://www.ebay.com/itm/mock3'
+      }
+    ];
+
+    const prices = mockListings.map(l => l.price).sort((a, b) => a - b);
+    const sum = prices.reduce((a, b) => a + b, 0);
+    const avg = Math.round((sum / prices.length) * 100) / 100;
+    const mid = prices.length % 2 === 0 
+      ? Math.round(((prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2 * 100) / 100 
+      : prices[Math.floor(prices.length / 2)];
+
+    return NextResponse.json({
+      query,
+      listings: mockListings,
+      stats: { min: prices[0], max: prices[prices.length - 1], average: avg, median: mid, count: prices.length },
+      source: 'MOCK - eBay sold items API not available'
+    });
+  }
+
   try {
     const accessToken = await getAccessToken();
-    const marketplaceId = MARKETPLACE_IDS[marketplace] || MARKETPLACE_IDS['GB'];
+    const marketplaceId = MARKETPLACE_IDS[marketplace] || MARKETPLACE_IDS['US'];
 
     let filter = 'buyingOptions:FIXED_PRICE';
     if (condition !== 'all') filter += `,condition:${condition}`;
 
-    // Get items
     const soldUrl = `${EBAY_API_BASE}/buy/browse/v1/item_summary/search?q=${encodeURIComponent(query)}&filter=${filter}&limit=50`;
     const soldRes = await fetch(soldUrl, { headers: { 'Authorization': `Bearer ${accessToken}`, 'X-EBAY-C-MARKETPLACE-ID': marketplaceId } });
 
     let listings: any[] = [];
     let stats = { min: 0, max: 0, average: 0, median: 0, count: 0 };
 
-    console.log('eBay API request:', { url: soldUrl, marketplaceId, filter, status: soldRes.status });
+    console.log('eBay API request:', { url: soldUrl, marketplaceId, status: soldRes.status });
 
     if (soldRes.ok) {
       const data = await soldRes.json();
-      console.log('eBay API response:', { total: data.total, count: data.itemSummaries?.length, sample: data.itemSummaries?.[0] });
+      console.log('eBay API response:', { total: data.total, count: data.itemSummaries?.length });
       listings = (data.itemSummaries || []).map((i: any) => transformSold(i, query));
       stats = calculateStats(listings);
     } else {
