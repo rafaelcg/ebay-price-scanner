@@ -108,8 +108,8 @@ export async function GET(request: NextRequest) {
     // Get OAuth token
     const accessToken = await getAccessToken();
 
-    // Search for sold items using Browse API
-    const searchUrl = `${EBAY_API_BASE}/buy/browse/v1/item_summary/search?q=${encodeURIComponent(query)}&filter=buyingOptions:FIXED_PRICE,soldItemsOnly:true&sort=price&limit=50`;
+    // Search for sold items using Browse API (relevance by default)
+    const searchUrl = `${EBAY_API_BASE}/buy/browse/v1/item_summary/search?q=${encodeURIComponent(query)}&filter=buyingOptions:FIXED_PRICE,soldItemsOnly:true&limit=50`;
 
     const response = await fetch(searchUrl, {
       headers: {
