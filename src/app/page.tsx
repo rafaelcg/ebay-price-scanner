@@ -337,7 +337,7 @@ function HomeContent() {
         >
           {Icon && <Icon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />}
           {selected?.flag && <span className="text-lg">{selected.flag}</span>}
-          <span className="text-sm text-gray-200">{selected?.name || selected?.id}</span>}
+          <span className="text-sm text-gray-200">{selected?.name || selected?.id}</span>
           <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </button>
         <AnimatePresence>
