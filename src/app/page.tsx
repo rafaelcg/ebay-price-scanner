@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence, m } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Barcode, Search, X, TrendingUp, TrendingDown, DollarSign,
-  Package, Bell, Clock, ArrowRight, ChevronDown, Circle
+  Package, Bell, Clock, ArrowRight, ChevronDown
 } from 'lucide-react';
 import { LanguageProvider, useLanguage, MARKETPLACES } from './LanguageContext';
 import {
@@ -60,6 +60,14 @@ const CONDITIONS = [
   { id: '3004', name: 'New' },
   { id: '3005', name: 'New - Other' },
   { id: '3007', name: 'Refurbished' },
+];
+
+const LANGUAGES = [
+  { id: 'en', name: 'English', flag: '🇺🇸' },
+  { id: 'pt-BR', name: 'Português', flag: '🇧🇷' },
+  { id: 'es', name: 'Español', flag: '🇪🇸' },
+  { id: 'fr', name: 'Français', flag: '🇫🇷' },
+  { id: 'it', name: 'Italiano', flag: '🇮🇹' },
 ];
 
 function HomeContent() {
@@ -253,10 +261,9 @@ function HomeContent() {
     }).format(price);
   };
 
-  // Currency conversion rates (base: USD)
   const CURRENCY_RATES: Record<string, number> = {
     'USD': 1, 'GBP': 0.79, 'EUR': 0.92, 'CAD': 1.36, 'AUD': 1.53,
-    'BRL': 4.97, 'FR': 0.92, 'ES': 0.92, 'IT': 0.92,
+    'BRL': 4.97,
   };
 
   const convertPrice = (price: number, fromCurrency: string) => {
@@ -300,99 +307,6 @@ function HomeContent() {
     : 0;
   const priceDiff = stats ? activeAvg - convertPrice(stats.average, stats.currency || 'USD') : 0;
 
-  // Custom Dropdown Component
-  const CustomSelect = ({ 
-    value, 
-    options, 
-    onChange, 
-    label,
-    icon: Icon 
-  }: { 
-    value: string; 
-    options: { id: string; name: string; flag?: string; currency?: string }[]; 
-    onChange: (val: string) => void;
-    label?: string;
-    icon?: any;
-  }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-      const handleClickOutside = (e: MouseEvent) => {
-        if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-          setIsOpen(false);
-        }
-      };
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const selected = options.find(o => o.id === value);
-
-    return (
-      <div ref={dropdownRef} className="relative">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 px-3 py-2 bg-slate-800/80 hover:bg-slate-700/80 rounded-lg border border-slate-700/50 transition-all group"
-        >
-          {Icon && <Icon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />}
-          {selected?.flag && <span className="text-lg">{selected.flag}</span>}
-          <span className="text-sm text-gray-200">{selected?.name || selected?.id}</span>
-          <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="absolute right-0 top-full mt-2 w-56 bg-slate-800 border border-slate-700/50 rounded-xl shadow-xl overflow-hidden z-50"
-            >
-              {label && (
-                <div className="px-4 py-2 bg-slate-900/50 border-b border-slate-700/50">
-                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">{label}</p>
-                </div>
-              )}
-              <div className="max-h-64 overflow-y-auto">
-                {options.map((option) => (
-                  <button
-                    key={option.id}
-                    onClick={() => { onChange(option.id); setIsOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors ${value === option.id ? 'bg-slate-700/30' : ''}`}
-                  >
-                    {option.flag && <span className="text-lg">{option.flag}</span>}
-                    <div className="flex-1 text-left">
-                      <p className="text-sm text-gray-200">{option.name}</p>
-                      {option.currency && <p className="text-xs text-gray-500">{option.currency}</p>}
-                    </div>
-                    {value === option.id && (
-                      <div className="w-2 h-2 bg-emerald-400 rounded-full" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  };
-
-  const languageOptions = [
-    { id: 'en', name: 'English', flag: '🇺🇸' },
-    { id: 'pt-BR', name: 'Português (BR)', flag: '🇧🇷' },
-    { id: 'es', name: 'Español', flag: '🇪🇸' },
-    { id: 'fr', name: 'Français', flag: '🇫🇷' },
-    { id: 'it', name: 'Italiano', flag: '🇮🇹' },
-  ];
-
-  const marketplaceOptions = MARKETPLACES.map(mp => ({
-    id: mp.id,
-    name: mp.name,
-    flag: mp.flag,
-    currency: mp.currency
-  }));
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <header className="relative overflow-hidden">
@@ -409,19 +323,37 @@ function HomeContent() {
             <span className="text-xl font-bold text-white">{t.app.title}</span>
           </div>
           <div className="flex items-center gap-3">
-            <CustomSelect
-              value={locale}
-              options={languageOptions}
-              onChange={(val) => setLocale(val as any)}
-              label="Language"
-              icon={Circle}
-            />
-            <CustomSelect
-              value={marketplace.id}
-              options={marketplaceOptions}
-              onChange={(val) => setMarketplace(MARKETPLACES.find(m => m.id === val) || MARKETPLACES[0])}
-              label="Marketplace"
-            />
+            <div className="relative">
+              <select
+                value={locale}
+                onChange={(e) => setLocale(e.target.value as any)}
+                className="appearance-none bg-slate-800/80 text-gray-200 text-sm rounded-lg pl-9 pr-8 py-2 cursor-pointer hover:bg-slate-700/80 transition-colors border border-slate-700/50"
+              >
+                {LANGUAGES.map((lang) => (
+                  <option key={lang.id} value={lang.id}>{lang.flag} {lang.name}</option>
+                ))}
+              </select>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg pointer-events-none">
+                {LANGUAGES.find(l => l.id === locale)?.flag}
+              </span>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+            
+            <div className="relative">
+              <select
+                value={marketplace.id}
+                onChange={(e) => setMarketplace(MARKETPLACES.find(m => m.id === e.target.value) || MARKETPLACES[0])}
+                className="appearance-none bg-slate-800/80 text-gray-200 text-sm rounded-lg pl-9 pr-8 py-2 cursor-pointer hover:bg-slate-700/80 transition-colors border border-slate-700/50"
+              >
+                {MARKETPLACES.map((mp) => (
+                  <option key={mp.id} value={mp.id}>{mp.flag} {mp.name}</option>
+                ))}
+              </select>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg pointer-events-none">
+                {marketplace.flag}
+              </span>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
           </div>
         </nav>
 
@@ -511,11 +443,9 @@ function HomeContent() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <ArrowRight className="w-5 h-5 text-blue-400" />
-                    <h3 className="text-lg font-bold text-white">Active Listings vs Sold Prices</h3>
+                    <h3 className="text-lg font-bold text-white">Active vs Sold Prices</h3>
                   </div>
-                  <span className="text-sm text-gray-400 flex items-center gap-1">
-                    {marketplace.flag} Searching {marketplace.name}
-                  </span>
+                  <span className="text-sm text-gray-400">{marketplace.flag} {marketplace.name}</span>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-slate-700/50 rounded-xl p-4 text-center">
@@ -527,11 +457,11 @@ function HomeContent() {
                     <p className="text-xl font-bold text-emerald-400">{formatConverted(stats.average, stats.currency || 'USD')}</p>
                   </div>
                   <div className="bg-slate-700/50 rounded-xl p-4 text-center">
-                    <p className="text-gray-400 text-sm mb-1">Active Items</p>
+                    <p className="text-gray-400 text-sm mb-1">Active</p>
                     <p className="text-xl font-bold text-white">{activeListings.length}</p>
                   </div>
                   <div className="bg-slate-700/50 rounded-xl p-4 text-center">
-                    <p className="text-gray-400 text-sm mb-1">Difference</p>
+                    <p className="text-gray-400 text-sm mb-1">Diff</p>
                     <p className="text-xl font-bold text-purple-400">{formatCurrencySimple(priceDiff)}</p>
                   </div>
                 </div>
@@ -565,9 +495,7 @@ function HomeContent() {
                   {t.listings.title}
                 </h2>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-400 flex items-center gap-1">
-                    {marketplace.flag} {marketplace.name}
-                  </span>
+                  <span className="text-sm text-gray-400">{marketplace.flag} {marketplace.name}</span>
                   <span className="text-gray-300 font-medium">{stats.count} {t.stats.itemsAnalyzed}</span>
                 </div>
               </div>
