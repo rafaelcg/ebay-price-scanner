@@ -111,7 +111,6 @@ export async function GET(request: NextRequest) {
     const accessToken = await getAccessToken();
     const marketplaceId = MARKETPLACE_IDS[marketplace] || MARKETPLACE_IDS['GB'];
 
-    // Build filter for sold items
     let filter = 'buyingOptions:FIXED_PRICE,soldItemsOnly:true';
     if (condition !== 'all') filter += `,condition:${condition}`;
 
@@ -121,12 +120,7 @@ export async function GET(request: NextRequest) {
     let listings: any[] = [];
     let stats = { min: 0, max: 0, average: 0, median: 0, count: 0 };
 
-    console.log('eBay API request:', {
-      url: soldUrl,
-      marketplaceId,
-      filter,
-      status: soldRes.status
-    });
+    console.log('eBay API request:', { url: soldUrl, marketplaceId, filter, status: soldRes.status });
 
     if (soldRes.ok) {
       const data = await soldRes.json();
@@ -135,7 +129,7 @@ export async function GET(request: NextRequest) {
       stats = calculateStats(listings);
     } else {
       const errorText = await soldRes.text();
-      console.error('eBay API error:', soldRes.status, errorText);
+      console.error('eBay API error:', soldRes.status, errorText.substring(0, 500));
     }
 
     return NextResponse.json({ query, listings, stats, source: 'eBay API' });
