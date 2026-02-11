@@ -252,6 +252,22 @@ function HomeContent() {
     }).format(price);
   };
 
+  // Currency conversion rates (base: USD)
+  const CURRENCY_RATES: Record<string, number> = {
+    'USD': 1, 'GBP': 0.79, 'EUR': 0.92, 'CAD': 1.36, 'AUD': 1.53,
+    'BRL': 4.97, 'FR': 0.92, 'ES': 0.92, 'IT': 0.92,
+  };
+
+  const convertPrice = (price: number, fromCurrency: string) => {
+    if (fromCurrency === marketplace.currency) return price;
+    const usdPrice = price / (CURRENCY_RATES[fromCurrency] || 1);
+    return usdPrice * (CURRENCY_RATES[marketplace.currency] || 1);
+  };
+
+  const formatConverted = (price: number, fromCurrency: string) => {
+    return formatCurrencySimple(convertPrice(price, fromCurrency));
+  };
+
   const chartData = {
     labels: priceHistory.map(p => p.date),
     datasets: [
@@ -279,9 +295,9 @@ function HomeContent() {
   };
 
   const activeAvg = activeListings.length > 0 
-    ? activeListings.reduce((a, b) => a + b.price, 0) / activeListings.length 
+    ? activeListings.reduce((a, b) => a + convertPrice(b.price, b.currency), 0) / activeListings.length 
     : 0;
-  const priceDiff = stats ? activeAvg - stats.average : 0;
+  const priceDiff = stats ? activeAvg - convertPrice(stats.average, stats.currency || 'USD') : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -398,7 +414,7 @@ function HomeContent() {
               ].map((stat, i) => (
                 <motion.div key={stat.key} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 + i * 0.1 }} className="bg-slate-800/90 rounded-2xl p-6 text-center border border-slate-700/50">
                   <p className="text-gray-300 text-sm mb-2 font-semibold tracking-wide">{stat.label}</p>
-                  <p className={`text-2xl md:text-3xl font-bold text-${stat.color}-400`}>{formatCurrencySimple(stat.value)}</p>
+                  <p className={`text-2xl md:text-3xl font-bold text-${stat.color}-400`}>{formatConverted(stat.value, stats.currency || 'USD')}</p>
                   {stat.icon && <stat.icon className={`w-5 h-5 text-${stat.color}-400 mx-auto mt-2`} />}
                 </motion.div>
               ))}
@@ -417,7 +433,7 @@ function HomeContent() {
                   </div>
                   <div className="bg-slate-700/50 rounded-xl p-4 text-center">
                     <p className="text-gray-400 text-sm mb-1">Sold Avg</p>
-                    <p className="text-xl font-bold text-emerald-400">{formatCurrencySimple(stats.average)}</p>
+                    <p className="text-xl font-bold text-emerald-400">{formatConverted(stats.average, stats.currency || 'USD')}</p>
                   </div>
                   <div className="bg-slate-700/50 rounded-xl p-4 text-center">
                     <p className="text-gray-400 text-sm mb-1">Active Items</p>
@@ -467,7 +483,7 @@ function HomeContent() {
                       <div className="flex-1 min-w-0">
                         <p className="text-gray-200 font-medium text-sm line-clamp-2 mb-2">{item.title}</p>
                         <div className="flex items-center justify-between">
-                          <span className="text-xl font-bold text-emerald-400">{formatCurrencySimple(item.price)}</span>
+                          <span className="text-xl font-bold text-emerald-400">{formatConverted(item.price, item.currency)}</span>
                           <span className="text-xs text-gray-300 bg-slate-600/80 px-2 py-1 rounded-full">{item.condition}</span>
                         </div>
                         <p className="text-gray-400 text-xs mt-1">Sold {item.soldDate}</p>
