@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, m } from 'framer-motion';
 import { 
   Barcode, Search, X, TrendingUp, TrendingDown, DollarSign,
-  Package, Bell, Clock, TrendingRight, Globe, ChevronDown
+  Package, Bell, Clock, ArrowRight, ChevronDown
 } from 'lucide-react';
 import { LanguageProvider, useLanguage, MARKETPLACES } from './LanguageContext';
 import {
@@ -509,7 +509,7 @@ function HomeContent() {
               <div className="bg-slate-800/90 rounded-2xl p-6 border border-slate-700/50 mb-8">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <TrendingRight className="w-5 h-5 text-blue-400" />
+                    <ArrowRight className="w-5 h-5 text-blue-400" />
                     <h3 className="text-lg font-bold text-white">Active Listings vs Sold Prices</h3>
                   </div>
                   <span className="text-sm text-gray-400 flex items-center gap-1">
