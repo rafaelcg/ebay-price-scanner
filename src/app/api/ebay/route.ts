@@ -31,12 +31,10 @@ async function getAccessToken(): Promise<string> {
   
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('OAuth error:', response.status, errorText.substring(0, 500));
-    throw new Error(`OAuth failed: ${response.statusText} - ${errorText.substring(0, 200)}`);
+    throw new Error(`OAuth failed: ${response.statusText}`);
   }
   
   const data = await response.json();
-  console.log('OAuth token obtained, expires_in:', data.expires_in);
   return data.access_token;
 }
 
@@ -139,9 +137,12 @@ export async function GET(request: NextRequest) {
     const prices = mockListings.map(l => l.price).sort((a, b) => a - b);
     const sum = prices.reduce((a, b) => a + b, 0);
     const avg = Math.round((sum / prices.length) * 100) / 100;
-    const mid = prices.length % 2 === 0 
-      ? Math.round(((prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2 * 100) / 100 
-      : prices[Math.floor(prices.length / 2)];
+    let mid: number;
+    if (prices.length % 2 === 0) {
+      mid = Math.round(((prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2 * 100) / 100);
+    } else {
+      mid = prices[Math.floor(prices.length / 2)];
+    }
 
     return NextResponse.json({
       query,
@@ -164,21 +165,10 @@ export async function GET(request: NextRequest) {
     let listings: any[] = [];
     let stats = { min: 0, max: 0, average: 0, median: 0, count: 0 };
 
-    console.log('eBay API request:', { url: soldUrl, marketplaceId, status: soldRes.status });
-
     if (soldRes.ok) {
       const data = await soldRes.json();
-      console.log('eBay API response:', { total: data.total, count: data.itemSummaries?.length });
       listings = (data.itemSummaries || []).map((i: any) => transformSold(i, query));
       stats = calculateStats(listings);
-    } else {
-      const errorText = await soldRes.text();
-      console.error('eBay API error:', soldRes.status, errorText.substring(0, 500));
-      return NextResponse.json({ 
-        error: 'eBay API error', 
-        status: soldRes.status,
-        details: errorText.substring(0, 500) 
-      }, { status: soldRes.status });
     }
 
     return NextResponse.json({ query, listings, stats, source: 'eBay API' });
