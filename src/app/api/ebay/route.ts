@@ -31,12 +31,12 @@ async function getAccessToken(): Promise<string> {
   
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('OAuth error:', response.status, errorText);
-    throw new Error(`OAuth failed: ${response.statusText}`);
+    console.error('OAuth error:', response.status, errorText.substring(0, 500));
+    throw new Error(`OAuth failed: ${response.statusText} - ${errorText.substring(0, 200)}`);
   }
   
   const data = await response.json();
-  console.log('OAuth token obtained successfully');
+  console.log('OAuth token obtained, expires_in:', data.expires_in);
   return data.access_token;
 }
 
@@ -136,12 +136,17 @@ export async function GET(request: NextRequest) {
 
     if (soldRes.ok) {
       const data = await soldRes.json();
-      console.log('eBay API response:', { total: data.total, count: data.itemSummaries?.length });
+      console.log('eBay API response:', { total: data.total, count: data.itemSummaries?.length, sample: data.itemSummaries?.[0] });
       listings = (data.itemSummaries || []).map((i: any) => transformSold(i, query));
       stats = calculateStats(listings);
     } else {
       const errorText = await soldRes.text();
       console.error('eBay API error:', soldRes.status, errorText.substring(0, 500));
+      return NextResponse.json({ 
+        error: 'eBay API error', 
+        status: soldRes.status,
+        details: errorText.substring(0, 500) 
+      }, { status: soldRes.status });
     }
 
     return NextResponse.json({ query, listings, stats, source: 'eBay API' });
