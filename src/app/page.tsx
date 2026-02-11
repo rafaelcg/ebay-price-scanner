@@ -183,7 +183,18 @@ function HomeContent() {
         setPriceData(soldData.listings);
         setStats(soldData.stats);
       } else if (soldRes.ok && soldData.listings?.length === 0) {
-        setError(t.listings.noResults);
+        // Try test endpoint as fallback
+        console.log('No results, trying test endpoint...');
+        const testRes = await fetch(
+          `/api/ebay/test?q=${encodeURIComponent(searchQuery)}&marketplace=${marketplace.id}`
+        );
+        const testData = await testRes.json();
+        if (testRes.ok && testData.listings?.length > 0) {
+          setPriceData(testData.listings);
+          setStats(testData.stats);
+        } else {
+          setError(t.listings.noResults);
+        }
       } else if (!soldRes.ok) {
         setError(`API error: ${soldData.details || soldRes.status}`);
       }
