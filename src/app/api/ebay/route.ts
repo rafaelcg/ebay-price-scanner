@@ -88,7 +88,14 @@ function calculateStats(listings: any[]) {
   if (prices.length === 0) return { min: 0, max: 0, average: 0, median: 0, count: 0 };
   const sum = prices.reduce((a, b) => a + b, 0);
   const avg = Math.round((sum / prices.length) * 100) / 100;
-  const mid = prices.length % 2 === 0 ? Math.round(((prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2 * 100) / 100 : prices[Math.floor(prices.length / 2)];
+  
+  let mid: number;
+  if (prices.length % 2 === 0) {
+    mid = Math.round(((prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2 * 100) / 100);
+  } else {
+    mid = prices[Math.floor(prices.length / 2)];
+  }
+  
   return { min: prices[0], max: prices[prices.length - 1], average: avg, median: mid, count: prices.length };
 }
 
