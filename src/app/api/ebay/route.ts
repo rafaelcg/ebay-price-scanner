@@ -122,9 +122,10 @@ export async function GET(request: NextRequest) {
     const accessToken = await getAccessToken();
     const marketplaceId = MARKETPLACE_IDS[marketplace] || MARKETPLACE_IDS['GB'];
 
-    let filter = 'buyingOptions:FIXED_PRICE,soldItemsOnly:true';
+    let filter = 'buyingOptions:FIXED_PRICE';
     if (condition !== 'all') filter += `,condition:${condition}`;
 
+    // Get items
     const soldUrl = `${EBAY_API_BASE}/buy/browse/v1/item_summary/search?q=${encodeURIComponent(query)}&filter=${filter}&limit=50`;
     const soldRes = await fetch(soldUrl, { headers: { 'Authorization': `Bearer ${accessToken}`, 'X-EBAY-C-MARKETPLACE-ID': marketplaceId } });
 
