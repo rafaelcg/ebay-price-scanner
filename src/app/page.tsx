@@ -171,22 +171,29 @@ function HomeContent() {
     setHasSearched(true);
 
     try {
+      console.log('Searching for:', searchQuery, 'marketplace:', marketplace.id);
+      
       const soldRes = await fetch(
         `/api/ebay?q=${encodeURIComponent(searchQuery)}&marketplace=${marketplace.id}&condition=${selectedCondition}`
       );
       const soldData = await soldRes.json();
+      console.log('Sold API response:', soldRes.status, soldData);
 
       if (soldRes.ok && soldData.listings?.length > 0) {
         setPriceData(soldData.listings);
         setStats(soldData.stats);
       } else if (soldRes.ok && soldData.listings?.length === 0) {
         setError(t.listings.noResults);
+      } else if (!soldRes.ok) {
+        setError(`API error: ${soldData.details || soldRes.status}`);
       }
 
       const activeRes = await fetch(
         `/api/ebay/active?q=${encodeURIComponent(searchQuery)}&marketplace=${marketplace.id}`
       );
       const activeData = await activeRes.json();
+      console.log('Active API response:', activeRes.status, activeData);
+      
       if (activeRes.ok && activeData.listings) {
         setActiveListings(activeData.listings);
       }
@@ -194,8 +201,8 @@ function HomeContent() {
       const history = generatePriceHistory(soldData.listings || []);
       setPriceHistory(history);
     } catch (err) {
+      console.error('Search error:', err);
       setError(t.errors.apiError);
-      console.error(err);
     } finally {
       isSearchingRef.current = false;
       setIsLoading(false);
