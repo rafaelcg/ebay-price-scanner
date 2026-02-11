@@ -260,16 +260,38 @@ const translations: Record<Locale, Translations> = {
   }
 };
 
+interface Marketplace {
+  id: string;
+  name: string;
+  currency: string;
+  flag: string;
+  locale: string;
+}
+
 interface LanguageContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
+  marketplace: Marketplace;
+  setMarketplace: (mp: Marketplace) => void;
   t: Translations;
 }
 
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
+export const MARKETPLACES: Marketplace[] = [
+  { id: 'GB', name: 'UK', currency: 'GBP', flag: '🇬🇧', locale: 'en' },
+  { id: 'US', name: 'US', currency: 'USD', flag: '🇺🇸', locale: 'en' },
+  { id: 'CA', name: 'Canada', currency: 'CAD', flag: '🇨🇦', locale: 'en' },
+  { id: 'AU', name: 'Australia', currency: 'AUD', flag: '🇦🇺', locale: 'en' },
+  { id: 'PT', name: 'Brasil', currency: 'BRL', flag: '🇧🇷', locale: 'pt-BR' },
+  { id: 'ES', name: 'Espana', currency: 'EUR', flag: '🇪🇸', locale: 'es' },
+  { id: 'FR', name: 'France', currency: 'EUR', flag: '🇫🇷', locale: 'fr' },
+  { id: 'IT', name: 'Italia', currency: 'EUR', flag: '🇮🇹', locale: 'it' },
+];
+
 export function LanguageProvider({children}: {children: ReactNode}) {
   const [locale, setLocale] = useState<Locale>('en');
+  const [marketplace, setMarketplace] = useState<Marketplace>(MARKETPLACES[0]);
 
   useEffect(() => {
     const browserLang = navigator.language.split('-')[0];
@@ -292,6 +314,11 @@ export function LanguageProvider({children}: {children: ReactNode}) {
     setLocale: (l: Locale) => {
       setLocale(l);
       localStorage.setItem('locale', l);
+    },
+    marketplace,
+    setMarketplace: (mp: Marketplace) => {
+      setMarketplace(mp);
+      localStorage.setItem('marketplace', mp.id);
     },
     t: translations[locale]
   };
@@ -317,15 +344,4 @@ export const LANGUAGES: {id: Locale; name: string; flag: string}[] = [
   {id: 'es', name: 'Espanol', flag: '🇪🇸'},
   {id: 'fr', name: 'Francais', flag: '🇫🇷'},
   {id: 'it', name: 'Italiano', flag: '🇮🇹'},
-];
-
-export const MARKETPLACES = [
-  { id: 'GB', name: 'UK', currency: 'GBP', flag: '🇬🇧', locale: 'en' },
-  { id: 'US', name: 'US', currency: 'USD', flag: '🇺🇸', locale: 'en' },
-  { id: 'CA', name: 'Canada', currency: 'CAD', flag: '🇨🇦', locale: 'en' },
-  { id: 'AU', name: 'Australia', currency: 'AUD', flag: '🇦🇺', locale: 'en' },
-  { id: 'PT', name: 'Brasil', currency: 'BRL', flag: '🇧🇷', locale: 'pt-BR' },
-  { id: 'ES', name: 'Espana', currency: 'EUR', flag: '🇪🇸', locale: 'es' },
-  { id: 'FR', name: 'France', currency: 'EUR', flag: '🇫🇷', locale: 'fr' },
-  { id: 'IT', name: 'Italia', currency: 'EUR', flag: '🇮🇹', locale: 'it' },
 ];
