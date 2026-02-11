@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, m } from 'framer-motion';
 import { 
   Barcode, Search, X, TrendingUp, TrendingDown, DollarSign,
-  Package, Bell, Clock, ArrowRight, ChevronDown
+  Package, Bell, Clock, ArrowRight, ChevronDown, Circle
 } from 'lucide-react';
 import { LanguageProvider, useLanguage, MARKETPLACES } from './LanguageContext';
 import {
@@ -414,7 +414,7 @@ function HomeContent() {
               options={languageOptions}
               onChange={(val) => setLocale(val as any)}
               label="Language"
-              icon={Globe}
+              icon={Circle}
             />
             <CustomSelect
               value={marketplace.id}
