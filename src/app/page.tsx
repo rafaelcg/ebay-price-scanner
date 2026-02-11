@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, m } from 'framer-motion';
 import { 
   Barcode, Search, X, TrendingUp, TrendingDown, DollarSign,
-  Package, Bell, Clock, TrendingRight
+  Package, Bell, Clock, TrendingRight, Globe, ChevronDown
 } from 'lucide-react';
 import { LanguageProvider, useLanguage, MARKETPLACES } from './LanguageContext';
 import {
@@ -299,6 +299,99 @@ function HomeContent() {
     : 0;
   const priceDiff = stats ? activeAvg - convertPrice(stats.average, stats.currency || 'USD') : 0;
 
+  // Custom Dropdown Component
+  const CustomSelect = ({ 
+    value, 
+    options, 
+    onChange, 
+    label,
+    icon: Icon 
+  }: { 
+    value: string; 
+    options: { id: string; name: string; flag?: string; currency?: string }[]; 
+    onChange: (val: string) => void;
+    label?: string;
+    icon?: any;
+  }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      const handleClickOutside = (e: MouseEvent) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+          setIsOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const selected = options.find(o => o.id === value);
+
+    return (
+      <div ref={dropdownRef} className="relative">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center gap-2 px-3 py-2 bg-slate-800/80 hover:bg-slate-700/80 rounded-lg border border-slate-700/50 transition-all group"
+        >
+          {Icon && <Icon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />}
+          {selected?.flag && <span className="text-lg">{selected.flag}</span>}
+          <span className="text-sm text-gray-200">{selected?.name || selected?.id}</span>}
+          <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute right-0 top-full mt-2 w-56 bg-slate-800 border border-slate-700/50 rounded-xl shadow-xl overflow-hidden z-50"
+            >
+              {label && (
+                <div className="px-4 py-2 bg-slate-900/50 border-b border-slate-700/50">
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">{label}</p>
+                </div>
+              )}
+              <div className="max-h-64 overflow-y-auto">
+                {options.map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => { onChange(option.id); setIsOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors ${value === option.id ? 'bg-slate-700/30' : ''}`}
+                  >
+                    {option.flag && <span className="text-lg">{option.flag}</span>}
+                    <div className="flex-1 text-left">
+                      <p className="text-sm text-gray-200">{option.name}</p>
+                      {option.currency && <p className="text-xs text-gray-500">{option.currency}</p>}
+                    </div>
+                    {value === option.id && (
+                      <div className="w-2 h-2 bg-emerald-400 rounded-full" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
+
+  const languageOptions = [
+    { id: 'en', name: 'English', flag: '🇺🇸' },
+    { id: 'pt-BR', name: 'Português (BR)', flag: '🇧🇷' },
+    { id: 'es', name: 'Español', flag: '🇪🇸' },
+    { id: 'fr', name: 'Français', flag: '🇫🇷' },
+    { id: 'it', name: 'Italiano', flag: '🇮🇹' },
+  ];
+
+  const marketplaceOptions = MARKETPLACES.map(mp => ({
+    id: mp.id,
+    name: mp.name,
+    flag: mp.flag,
+    currency: mp.currency
+  }));
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <header className="relative overflow-hidden">
@@ -314,31 +407,20 @@ function HomeContent() {
             </div>
             <span className="text-xl font-bold text-white">{t.app.title}</span>
           </div>
-          <div className="flex items-center gap-4">
-            <select
+          <div className="flex items-center gap-3">
+            <CustomSelect
               value={locale}
-              onChange={(e) => setLocale(e.target.value as any)}
-              className="bg-slate-800/90 text-gray-200 text-sm rounded-lg px-3 py-2 border border-slate-700/50 cursor-pointer"
-            >
-              {[
-                {id: 'en', flag: '🇺🇸'},
-                {id: 'pt-BR', flag: '🇧🇷'},
-                {id: 'es', flag: '🇪🇸'},
-                {id: 'fr', flag: '🇫🇷'},
-                {id: 'it', flag: '🇮🇹'},
-              ].map((lang) => (
-                <option key={lang.id} value={lang.id}>{lang.flag} {lang.id}</option>
-              ))}
-            </select>
-            <select
+              options={languageOptions}
+              onChange={(val) => setLocale(val as any)}
+              label="Language"
+              icon={Globe}
+            />
+            <CustomSelect
               value={marketplace.id}
-              onChange={(e) => setMarketplace(MARKETPLACES.find(m => m.id === e.target.value) || MARKETPLACES[0])}
-              className="bg-slate-800/90 text-gray-200 text-sm rounded-lg px-3 py-2 border border-slate-700/50 cursor-pointer"
-            >
-              {MARKETPLACES.map((mp) => (
-                <option key={mp.id} value={mp.id}>{mp.flag} {mp.name} ({mp.currency})</option>
-              ))}
-            </select>
+              options={marketplaceOptions}
+              onChange={(val) => setMarketplace(MARKETPLACES.find(m => m.id === val) || MARKETPLACES[0])}
+              label="Marketplace"
+            />
           </div>
         </nav>
 
@@ -358,9 +440,12 @@ function HomeContent() {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t.app.searchPlaceholder} className="w-full px-12 py-4 bg-slate-700/50 rounded-xl text-gray-200 placeholder-gray-400 border border-slate-600/50 focus:outline-none focus:border-purple-500/70" />
                 </div>
-                <select value={selectedCondition} onChange={(e) => setSelectedCondition(e.target.value)} className="bg-slate-700/50 text-gray-200 text-sm rounded-xl px-3 py-4 border border-slate-600/50 cursor-pointer">
-                  {CONDITIONS.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-                </select>
+                <div className="relative">
+                  <select value={selectedCondition} onChange={(e) => setSelectedCondition(e.target.value)} className="appearance-none bg-slate-700/50 text-gray-200 text-sm rounded-xl px-4 py-4 pr-10 border border-slate-600/50 cursor-pointer hover:bg-slate-700/70 transition-colors focus:outline-none focus:border-purple-500/70">
+                    {CONDITIONS.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                </div>
                 <button type="submit" disabled={isLoading || !query.trim()} className="px-8 py-4 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                   {isLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t.app.searchButton}
                 </button>
