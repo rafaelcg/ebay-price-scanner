@@ -15,6 +15,10 @@ const MARKETPLACE_IDS: Record<string, string> = {
 };
 
 async function getAccessToken(): Promise<string> {
+  if (!EBAY_APP_ID || !EBAY_CERT_ID) {
+    throw new Error('Missing eBay credentials');
+  }
+  
   const credentials = Buffer.from(`${EBAY_APP_ID}:${EBAY_CERT_ID}`).toString('base64');
   const response = await fetch(`${EBAY_API_BASE}/identity/v1/oauth2/token`, {
     method: 'POST',
@@ -24,8 +28,15 @@ async function getAccessToken(): Promise<string> {
     },
     body: 'grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope',
   });
-  if (!response.ok) throw new Error(`Token failed: ${response.statusText}`);
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('OAuth error:', response.status, errorText);
+    throw new Error(`OAuth failed: ${response.statusText}`);
+  }
+  
   const data = await response.json();
+  console.log('OAuth token obtained successfully');
   return data.access_token;
 }
 
