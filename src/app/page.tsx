@@ -234,7 +234,7 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="max-w-2xl mx-auto"
           >
-            <div className="glass rounded-2xl p-2">
+            <div className="bg-slate-800/90 rounded-2xl p-2 border border-slate-700/50">
               <form onSubmit={handleSubmit} className="flex items-center gap-2">
                 {searchMode === 'barcode' && (
                   <button
@@ -250,13 +250,13 @@ export default function Home() {
                   </button>
                 )}
                 <div className="flex-1 relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-200" />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder={searchMode === 'barcode' ? 'Or type product name...' : 'Search any product...'}
-                    className="w-full px-12 py-4 bg-white/10 rounded-xl text-white placeholder-gray-200 border border-white/20 focus:outline-none focus:border-purple-500/70 focus:bg-white/20 transition-all"
+                    className="w-full px-12 py-4 bg-slate-700/50 rounded-xl text-gray-200 placeholder-gray-400 border border-slate-600/50 focus:outline-none focus:border-purple-500/70 focus:bg-slate-700 transition-all"
                   />
                 </div>
                 <button
