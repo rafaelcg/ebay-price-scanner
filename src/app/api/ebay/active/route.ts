@@ -24,6 +24,12 @@ async function getAccessToken(): Promise<string> {
   return data.access_token;
 }
 
+const CONDITION_MAP: Record<string, string> = {
+  '3000': 'Used', '3001': 'Used - Very Good', '3002': 'Used - Good',
+  '3003': 'Used - Acceptable', '3004': 'New', '3005': 'New - Other',
+  '3007': 'Refurbished',
+};
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get('q') || '';
@@ -48,18 +54,19 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    const listings = (data.itemSummaries || []).map((item: any) => ({
-      title: item.title,
-      image: item.image?.imageUrl || item.thumbnailImages?.[0]?.imageUrl || null,
-      price: item.price?.value || 0,
-      currency: item.price?.currency || 'USD',
-      condition: item.condition?.conditionId ? {
-        '3000': 'Used', '3001': 'Used - Very Good', '3002': 'Used - Good',
-        '3003': 'Used - Acceptable', '3004': 'New', '3005': 'New - Other',
-        '3007': 'Refurbished',
-      }[item.condition.conditionId] || 'Unknown' : 'Unknown',
-      url: item.itemWebUrl || '#',
-    }));
+    const listings = (data.itemSummaries || []).map((item: any) => {
+      const conditionId = item.condition?.conditionId;
+      const conditionName = conditionId ? (CONDITION_MAP[conditionId] || 'Unknown') : 'Unknown';
+      
+      return {
+        title: item.title,
+        image: item.image?.imageUrl || item.thumbnailImages?.[0]?.imageUrl || null,
+        price: item.price?.value || 0,
+        currency: item.price?.currency || 'USD',
+        condition: conditionName,
+        url: item.itemWebUrl || '#',
+      };
+    });
 
     return NextResponse.json({ query, listings });
   } catch (error: any) {
