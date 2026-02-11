@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
+    console.log('eBay Active API response:', { total: data.total, count: data.itemSummaries?.length });
     const listings = (data.itemSummaries || []).map((item: any) => {
       const conditionId = item.condition?.conditionId;
       const conditionName = conditionId ? (CONDITION_MAP[conditionId] || 'Unknown') : 'Unknown';

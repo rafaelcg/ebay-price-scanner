@@ -121,10 +121,21 @@ export async function GET(request: NextRequest) {
     let listings: any[] = [];
     let stats = { min: 0, max: 0, average: 0, median: 0, count: 0 };
 
+    console.log('eBay API request:', {
+      url: soldUrl,
+      marketplaceId,
+      filter,
+      status: soldRes.status
+    });
+
     if (soldRes.ok) {
       const data = await soldRes.json();
+      console.log('eBay API response:', { total: data.total, count: data.itemSummaries?.length });
       listings = (data.itemSummaries || []).map((i: any) => transformSold(i, query));
       stats = calculateStats(listings);
+    } else {
+      const errorText = await soldRes.text();
+      console.error('eBay API error:', soldRes.status, errorText);
     }
 
     return NextResponse.json({ query, listings, stats, source: 'eBay API' });
