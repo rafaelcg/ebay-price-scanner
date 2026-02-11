@@ -507,9 +507,14 @@ function HomeContent() {
 
             {activeListings.length > 0 && (
               <div className="bg-slate-800/90 rounded-2xl p-6 border border-slate-700/50 mb-8">
-                <div className="flex items-center gap-2 mb-4">
-                  <TrendingRight className="w-5 h-5 text-blue-400" />
-                  <h3 className="text-lg font-bold text-white">Active Listings vs Sold Prices</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <TrendingRight className="w-5 h-5 text-blue-400" />
+                    <h3 className="text-lg font-bold text-white">Active Listings vs Sold Prices</h3>
+                  </div>
+                  <span className="text-sm text-gray-400 flex items-center gap-1">
+                    {marketplace.flag} Searching {marketplace.name}
+                  </span>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-slate-700/50 rounded-xl p-4 text-center">
@@ -558,7 +563,12 @@ function HomeContent() {
                   <Package className="w-5 h-5 text-gray-300" />
                   {t.listings.title}
                 </h2>
-                <span className="text-gray-300 font-medium">{stats.count} {t.stats.itemsAnalyzed}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-400 flex items-center gap-1">
+                    {marketplace.flag} {marketplace.name}
+                  </span>
+                  <span className="text-gray-300 font-medium">{stats.count} {t.stats.itemsAnalyzed}</span>
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {priceData.slice(0, 12).map((item, i) => (
