@@ -5,12 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Barcode, 
   Search, 
-  Camera, 
   X, 
   TrendingUp, 
   TrendingDown, 
   DollarSign,
-  Globe,
   Package,
   Sparkles,
   Zap,
@@ -39,7 +37,6 @@ interface PriceStats {
 
 function HomeContent() {
   const { t, locale, setLocale, marketplace, setMarketplace } = useLanguage();
-  const [searchMode, setSearchMode] = useState<'barcode' | 'text'>('text');
   const [query, setQuery] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -103,7 +100,6 @@ function HomeContent() {
                 const code = result.getText();
                 if (code !== lastScanned) {
                   setLastScanned(code);
-                  setSearchMode('barcode');
                   setQuery(code);
                   stopScanning();
                   await searchPrices(code);
@@ -262,26 +258,25 @@ function HomeContent() {
           >
             <div className="bg-slate-800/90 rounded-2xl p-2 border border-slate-700/50">
               <form onSubmit={handleSubmit} className="flex items-center gap-2">
-                {searchMode === 'barcode' && (
-                  <button
-                    type="button"
-                    onClick={isScanning ? stopScanning : startScanning}
-                    className={`p-4 rounded-xl transition-all ${
-                      isScanning 
-                        ? 'bg-red-500/20 text-red-400 animate-pulse' 
-                        : 'bg-gradient-to-br from-blue-500 to-purple-600 text-white hover:shadow-lg hover:shadow-purple-500/25'
-                    }`}
-                  >
-                    <Camera className="w-5 h-5" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={isScanning ? stopScanning : startScanning}
+                  className={`p-4 rounded-xl transition-all ${
+                    isScanning 
+                      ? 'bg-red-500/20 text-red-400 animate-pulse' 
+                      : 'bg-gradient-to-br from-blue-500 to-purple-600 text-white hover:shadow-lg hover:shadow-purple-500/25'
+                  }`}
+                  title={t.app.scan}
+                >
+                  <Barcode className="w-5 h-5" />
+                </button>
                 <div className="flex-1 relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder={searchMode === 'barcode' ? t.app.orType : t.app.searchPlaceholder}
+                    placeholder={t.app.searchPlaceholder}
                     className="w-full px-12 py-4 bg-slate-700/50 rounded-xl text-gray-200 placeholder-gray-400 border border-slate-600/50 focus:outline-none focus:border-purple-500/70 focus:bg-slate-700 transition-all"
                   />
                 </div>
@@ -297,32 +292,6 @@ function HomeContent() {
                   )}
                 </button>
               </form>
-            </div>
-
-            {/* Mode Toggle */}
-            <div className="flex items-center justify-center gap-4 mt-4">
-              <button
-                onClick={() => setSearchMode('barcode')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all ${
-                  searchMode === 'barcode' 
-                    ? 'bg-white/10 text-white' 
-                    : 'text-gray-300 hover:text-white'
-                }`}
-              >
-                <Barcode className="w-4 h-4" />
-                {t.app.modeBarcode}
-              </button>
-              <button
-                onClick={() => setSearchMode('text')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all ${
-                  searchMode === 'text' 
-                    ? 'bg-white/10 text-white' 
-                    : 'text-gray-300 hover:text-white'
-                }`}
-              >
-                <Search className="w-4 h-4" />
-                {t.app.modeText}
-              </button>
             </div>
           </motion.div>
 
