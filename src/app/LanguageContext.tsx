@@ -297,6 +297,7 @@ export function LanguageProvider({children}: {children: ReactNode}) {
     const browserLang = navigator.language.split('-')[0];
     const supportedLangs: Locale[] = ['en', 'pt-BR', 'es', 'fr', 'it'];
     const savedLocale = localStorage.getItem('locale') as Locale;
+    const savedMarketplace = localStorage.getItem('marketplace');
 
     if (savedLocale && supportedLangs.includes(savedLocale)) {
       setLocale(savedLocale);
@@ -305,6 +306,13 @@ export function LanguageProvider({children}: {children: ReactNode}) {
         setLocale('pt-BR');
       } else {
         setLocale(browserLang as Locale);
+      }
+    }
+
+    if (savedMarketplace) {
+      const mp = MARKETPLACES.find(m => m.id === savedMarketplace);
+      if (mp) {
+        setMarketplace(mp);
       }
     }
   }, []);
