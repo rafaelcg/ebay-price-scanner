@@ -363,13 +363,13 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.4 + i * 0.1 }}
-              className="glass rounded-2xl p-6 text-center"
+              className="bg-slate-800/90 rounded-2xl p-6 text-center border border-slate-700/50"
             >
               <div className="w-12 h-12 mx-auto mb-4 bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-xl flex items-center justify-center">
-                <feature.icon className="w-6 h-6 text-white" />
+                <feature.icon className="w-6 h-6 text-gray-200" />
               </div>
-              <h3 className="text-white font-semibold mb-1">{feature.title}</h3>
-              <p className="text-gray-200 text-sm">{feature.desc}</p>
+              <h3 className="text-gray-200 font-semibold mb-1">{feature.title}</h3>
+              <p className="text-gray-400 text-sm">{feature.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -391,27 +391,27 @@ export default function Home() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.1 }}
-                className="glass rounded-2xl p-6 text-center"
+                className="bg-slate-800/90 rounded-2xl p-6 text-center border border-slate-700/50"
               >
-                <p className="text-white text-sm mb-2 font-semibold tracking-wide">AVERAGE</p>
+                <p className="text-gray-300 text-sm mb-2 font-semibold tracking-wide">AVERAGE</p>
                 <p className="text-2xl md:text-3xl font-bold text-emerald-400">{formatCurrency(stats.average)}</p>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="glass rounded-2xl p-6 text-center"
+                className="bg-slate-800/90 rounded-2xl p-6 text-center border border-slate-700/50"
               >
-                <p className="text-white text-sm mb-2 font-semibold tracking-wide">MEDIAN</p>
+                <p className="text-gray-300 text-sm mb-2 font-semibold tracking-wide">MEDIAN</p>
                 <p className="text-2xl md:text-3xl font-bold text-sky-400">{formatCurrency(stats.median)}</p>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.3 }}
-                className="glass rounded-2xl p-6 text-center"
+                className="bg-slate-800/90 rounded-2xl p-6 text-center border border-slate-700/50"
               >
-                <p className="text-white text-sm mb-2 font-semibold tracking-wide">LOWEST</p>
+                <p className="text-gray-300 text-sm mb-2 font-semibold tracking-wide">LOWEST</p>
                 <p className="text-2xl md:text-3xl font-bold text-red-400">{formatCurrency(stats.min)}</p>
                 <TrendingDown className="w-5 h-5 text-red-400 mx-auto mt-2" />
               </motion.div>
@@ -419,22 +419,22 @@ export default function Home() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.4 }}
-                className="glass rounded-2xl p-6 text-center"
+                className="bg-slate-800/90 rounded-2xl p-6 text-center border border-slate-700/50"
               >
-                <p className="text-white text-sm mb-2 font-semibold tracking-wide">HIGHEST</p>
+                <p className="text-gray-300 text-sm mb-2 font-semibold tracking-wide">HIGHEST</p>
                 <p className="text-2xl md:text-3xl font-bold text-purple-400">{formatCurrency(stats.max)}</p>
                 <TrendingUp className="w-5 h-5 text-purple-400 mx-auto mt-2" />
               </motion.div>
             </div>
 
             {/* Listings */}
-            <div className="glass rounded-3xl p-6">
+            <div className="bg-slate-800/90 rounded-3xl p-6 border border-slate-700/50">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Package className="w-5 h-5 text-white" />
+                <h2 className="text-xl font-bold text-gray-100 flex items-center gap-2">
+                  <Package className="w-5 h-5 text-gray-300" />
                   Recent Sold Listings
                 </h2>
-                <span className="text-white font-medium">{stats.count} items analyzed</span>
+                <span className="text-gray-300 font-medium">{stats.count} items analyzed</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -447,7 +447,7 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 + i * 0.05 }}
-                    className="group block bg-white/10 rounded-xl p-4 hover:bg-white/20 transition-all hover:scale-[1.02]"
+                    className="group block bg-slate-700/50 rounded-xl p-4 hover:bg-slate-700 transition-all hover:scale-[1.02] border border-slate-600/50"
                   >
                     <div className="flex gap-4">
                       {item.image && (
@@ -461,18 +461,18 @@ export default function Home() {
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-white font-medium text-sm line-clamp-2 mb-2">
+                        <p className="text-gray-200 font-medium text-sm line-clamp-2 mb-2">
                           {item.title}
                         </p>
                         <div className="flex items-center justify-between">
                           <span className="text-xl font-bold text-emerald-400">
                             {formatCurrency(item.price)}
                           </span>
-                          <span className="text-xs text-white bg-white/20 px-2 py-1 rounded-full">
+                          <span className="text-xs text-gray-300 bg-slate-600/80 px-2 py-1 rounded-full">
                             {item.condition}
                           </span>
                         </div>
-                        <p className="text-gray-300 text-xs mt-1">
+                        <p className="text-gray-400 text-xs mt-1">
                           Sold {item.soldDate}
                         </p>
                       </div>
