@@ -33,6 +33,7 @@ interface PriceStats {
   average: number;
   count: number;
   median: number;
+  currency?: string;
 }
 
 interface ActiveListing {
