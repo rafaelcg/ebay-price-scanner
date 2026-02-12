@@ -107,14 +107,14 @@ export async function GET(request: NextRequest) {
     const accessToken = await getAccessToken();
     const marketplaceId = MARKETPLACE_IDS[marketplace] || MARKETPLACE_IDS['GB'];
 
-    // Build filter for sold items - eBay Browse API format
-    // Using comma-separated filter: name:value,name2:value2
+    // Build filter for sold items - exact format from eBay docs
+    // filter=name:value,name2:value2
     let filter = 'soldItemsOnly:true,buyingOptions:FIXED_PRICE';
     if (condition !== 'all') {
       filter += `,conditionId:${condition}`;
     }
 
-    const url = `${EBAY_API_BASE}/buy/browse/v1/item_summary/search?q=${encodeURIComponent(query)}&filter=${encodeURIComponent(filter)}&limit=50`;
+    const url = `${EBAY_API_BASE}/buy/browse/v1/item_summary/search?q=${encodeURIComponent(query)}&filter=${filter}&limit=50`;
     
     const response = await fetch(url, {
       headers: {
