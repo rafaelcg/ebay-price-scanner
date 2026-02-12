@@ -12,7 +12,6 @@ interface PriceData {
   title: string;
   image: string;
   price: number;
-  soldPrice: number;
   currency: string;
   condition: string;
   url: string;
@@ -379,7 +378,6 @@ function HomeContent() {
                           <span className="text-xl font-bold text-emerald-400">{formatConverted(item.price, item.currency)}</span>
                           <span className="text-xs text-gray-300 bg-slate-600/80 px-2 py-1 rounded-full">{item.condition}</span>
                         </div>
-                        <p className="text-gray-400 text-xs mt-1">Sold {item.soldDate}</p>
                       </div>
                     </div>
                   </motion.a>
