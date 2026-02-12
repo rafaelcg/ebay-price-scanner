@@ -174,7 +174,7 @@ function HomeContent() {
       console.log('Searching for:', searchQuery, 'marketplace:', marketplace.id);
       
       const soldRes = await fetch(
-        `/api/ebay?q=${encodeURIComponent(searchQuery)}&marketplace=${marketplace.id}&condition=${selectedCondition}&mock=true`
+        `/api/ebay?q=${encodeURIComponent(searchQuery)}&marketplace=${marketplace.id}&condition=${selectedCondition}`
       );
       const soldData = await soldRes.json();
       console.log('Sold API response:', soldRes.status, soldData);
