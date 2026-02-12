@@ -35,7 +35,7 @@ export async function GET() {
     }
 
     // Test the Browse API with the token
-    const browseResponse = await fetch(`${EBAY_API_BASE}/buy/browse/v1/item_summary/search?q=iphone&limit=5`, {
+    const browseResponse = await fetch(`${EBAY_API_BASE}/buy/browse/v1/item_summary/search?q=iphone&filter=soldItemsOnly:true&limit=5`, {
       headers: {
         'Authorization': `Bearer ${data.access_token}`,
         'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US'
