@@ -8,8 +8,6 @@ import {
 } from 'lucide-react';
 import { LanguageProvider, useLanguage, MARKETPLACES } from './LanguageContext';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
-
 interface PriceData {
   title: string;
   image: string;
