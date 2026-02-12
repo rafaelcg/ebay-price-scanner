@@ -237,15 +237,12 @@ function HomeContent() {
               <select
                 value={locale}
                 onChange={(e) => setLocale(e.target.value as any)}
-                className="appearance-none bg-slate-800/80 text-gray-200 text-sm rounded-lg pl-9 pr-8 py-2 cursor-pointer hover:bg-slate-700/80 transition-colors border border-slate-700/50"
+                className="appearance-none bg-slate-800/80 text-gray-200 text-sm rounded-lg pl-3 pr-8 py-2 cursor-pointer hover:bg-slate-700/80 transition-colors border border-slate-700/50"
               >
                 {LANGUAGES.map((lang) => (
-                  <option key={lang.id} value={lang.id}>{lang.flag} {lang.name}</option>
+                  <option key={lang.id} value={lang.id}>{lang.name}</option>
                 ))}
               </select>
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg pointer-events-none">
-                {LANGUAGES.find(l => l.id === locale)?.flag}
-              </span>
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
             
@@ -253,15 +250,12 @@ function HomeContent() {
               <select
                 value={marketplace.id}
                 onChange={(e) => setMarketplace(MARKETPLACES.find(m => m.id === e.target.value) || MARKETPLACES[0])}
-                className="appearance-none bg-slate-800/80 text-gray-200 text-sm rounded-lg pl-9 pr-8 py-2 cursor-pointer hover:bg-slate-700/80 transition-colors border border-slate-700/50"
+                className="appearance-none bg-slate-800/80 text-gray-200 text-sm rounded-lg pl-3 pr-8 py-2 cursor-pointer hover:bg-slate-700/80 transition-colors border border-slate-700/50"
               >
                 {MARKETPLACES.map((mp) => (
                   <option key={mp.id} value={mp.id}>{mp.flag} {mp.name}</option>
                 ))}
               </select>
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg pointer-events-none">
-                {marketplace.flag}
-              </span>
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
