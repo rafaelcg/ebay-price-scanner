@@ -19,8 +19,9 @@ async function getAccessToken(): Promise<string> {
     throw new Error('Missing eBay credentials');
   }
   
+  console.log('OAuth attempt:', { hasAppId: !!EBAY_APP_ID, hasCertId: !!EBAY_CERT_ID, env: EBAY_ENVIRONMENT });
+  
   const credentials = Buffer.from(`${EBAY_APP_ID}:${EBAY_CERT_ID}`).toString('base64');
-  console.log('OAuth request:', { appIdLength: EBAY_APP_ID?.length, certIdLength: EBAY_CERT_ID?.length });
   
   const response = await fetch(`${EBAY_API_BASE}/identity/v1/oauth2/token`, {
     method: 'POST',
@@ -38,7 +39,7 @@ async function getAccessToken(): Promise<string> {
   }
   
   const data = await response.json();
-  console.log('OAuth success:', { hasAccessToken: !!data.access_token, expiresIn: data.expires_in });
+  console.log('OAuth success:', { expiresIn: data.expires_in });
   return data.access_token;
 }
 
