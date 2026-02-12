@@ -51,7 +51,7 @@ const CONDITION_MAP: Record<string, string> = {
   '7000': 'For Parts', '7001': 'For Parts or Not Working',
 };
 
-function transformSold(item: any, query: string) {
+function transformListing(item: any, query: string) {
   let price = 0;
   if (item.price?.value) price = parseFloat(item.price.value);
   else if (item.currentPrice?.value) price = parseFloat(item.currentPrice.value);
@@ -69,8 +69,6 @@ function transformSold(item: any, query: string) {
   return {
     title: item.title,
     image: item.image?.imageUrl || item.thumbnailImages?.[0]?.imageUrl || null,
-    soldDate: item.soldDate ? new Date(item.soldDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
-    soldDateRaw: item.soldDate ? item.soldDate.split('T')[0] : '',
     price,
     soldPrice: price,
     currency: item.price?.currency || 'USD',
@@ -108,9 +106,9 @@ export async function GET(request: NextRequest) {
     const accessToken = await getAccessToken();
     const marketplaceId = MARKETPLACE_IDS[marketplace] || MARKETPLACE_IDS['GB'];
 
-    // Build filter for sold items - exact format from eBay docs
-    // filter=name:value,name2:value2
-    let filter = 'soldItemsOnly:true,buyingOptions:FIXED_PRICE';
+    // Build filter - Browse API doesn't support sold items filter
+    // We show active listings as current market prices
+    let filter = 'buyingOptions:FIXED_PRICE';
     if (condition !== 'all') {
       filter += `,conditionId:${condition}`;
     }
@@ -135,12 +133,12 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    const listings = (data.itemSummaries || []).map((i: any) => transformSold(i, query));
+    const listings = (data.itemSummaries || []).map((i: any) => transformListing(i, query));
     const stats = calculateStats(listings);
 
     console.log('eBay API response:', { total: data.total, count: listings.length });
 
-    return NextResponse.json({ query, listings, stats, source: 'eBay API' });
+    return NextResponse.json({ query, listings, stats, source: 'eBay Active Listings' });
   } catch (error: any) {
     console.error('API error:', error);
     return NextResponse.json({ error: 'Failed', details: error.message }, { status: 500 });

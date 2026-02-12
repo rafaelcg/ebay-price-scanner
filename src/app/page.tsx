@@ -4,22 +4,15 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Barcode, Search, X, TrendingUp, TrendingDown, DollarSign,
-  Package, Bell, Clock, ArrowRight, ChevronDown
+  Package, Bell, ArrowRight, ChevronDown
 } from 'lucide-react';
 import { LanguageProvider, useLanguage, MARKETPLACES } from './LanguageContext';
-import {
-  Chart as ChartJS, CategoryScale, LinearScale, PointElement,
-  LineElement, Title, Tooltip, Legend, Filler
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 interface PriceData {
   title: string;
   image: string;
-  soldDate: string;
-  soldDateRaw?: string;
   price: number;
   soldPrice: number;
   currency: string;
@@ -34,21 +27,6 @@ interface PriceStats {
   count: number;
   median: number;
   currency?: string;
-}
-
-interface ActiveListing {
-  title: string;
-  image: string;
-  price: number;
-  currency: string;
-  condition: string;
-  url: string;
-}
-
-interface PriceHistoryPoint {
-  date: string;
-  avgPrice: number;
-  count: number;
 }
 
 const CONDITIONS = [
@@ -76,9 +54,7 @@ function HomeContent() {
   const [isScanning, setIsScanning] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [priceData, setPriceData] = useState<PriceData[]>([]);
-  const [activeListings, setActiveListings] = useState<ActiveListing[]>([]);
   const [stats, setStats] = useState<PriceStats | null>(null);
-  const [priceHistory, setPriceHistory] = useState<PriceHistoryPoint[]>([]);
   const [error, setError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -166,51 +142,25 @@ function HomeContent() {
     setError('');
     setPriceData([]);
     setStats(null);
-    setActiveListings([]);
-    setPriceHistory([]);
     setHasSearched(true);
 
     try {
       console.log('Searching for:', searchQuery, 'marketplace:', marketplace.id);
       
-      const soldRes = await fetch(
+      const res = await fetch(
         `/api/ebay?q=${encodeURIComponent(searchQuery)}&marketplace=${marketplace.id}&condition=${selectedCondition}`
       );
-      const soldData = await soldRes.json();
-      console.log('Sold API response:', soldRes.status, soldData);
+      const data = await res.json();
+      console.log('API response:', res.status, data);
 
-      if (soldRes.ok && soldData.listings?.length > 0) {
-        setPriceData(soldData.listings);
-        setStats(soldData.stats);
-      } else if (soldRes.ok && soldData.listings?.length === 0) {
-        // Try test endpoint as fallback
-        console.log('No results, trying test endpoint...');
-        const testRes = await fetch(
-          `/api/ebay/test?q=${encodeURIComponent(searchQuery)}&marketplace=${marketplace.id}`
-        );
-        const testData = await testRes.json();
-        if (testRes.ok && testData.listings?.length > 0) {
-          setPriceData(testData.listings);
-          setStats(testData.stats);
-        } else {
-          setError(t.listings.noResults);
-        }
-      } else if (!soldRes.ok) {
-        setError(`API error: ${soldData.details || soldRes.status}`);
+      if (res.ok && data.listings?.length > 0) {
+        setPriceData(data.listings);
+        setStats(data.stats);
+      } else if (res.ok) {
+        setError(t.listings.noResults);
+      } else {
+        setError(`API error: ${data.details || res.status}`);
       }
-
-      const activeRes = await fetch(
-        `/api/ebay/active?q=${encodeURIComponent(searchQuery)}&marketplace=${marketplace.id}`
-      );
-      const activeData = await activeRes.json();
-      console.log('Active API response:', activeRes.status, activeData);
-      
-      if (activeRes.ok && activeData.listings) {
-        setActiveListings(activeData.listings);
-      }
-
-      const history = generatePriceHistory(soldData.listings || []);
-      setPriceHistory(history);
     } catch (err) {
       console.error('Search error:', err);
       setError(t.errors.apiError);
@@ -219,30 +169,6 @@ function HomeContent() {
       setIsLoading(false);
       setIsSearching(false);
     }
-  };
-
-  const generatePriceHistory = (listings: PriceData[]): PriceHistoryPoint[] => {
-    if (listings.length === 0) return [];
-    
-    const grouped: Record<string, { sum: number; count: number }> = {};
-    listings.forEach(item => {
-      if (item.soldDateRaw) {
-        if (!grouped[item.soldDateRaw]) {
-          grouped[item.soldDateRaw] = { sum: 0, count: 0 };
-        }
-        grouped[item.soldDateRaw].sum += item.price;
-        grouped[item.soldDateRaw].count += 1;
-      }
-    });
-
-    return Object.entries(grouped)
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .slice(-30)
-      .map(([date, data]) => ({
-        date,
-        avgPrice: Math.round(data.sum / data.count),
-        count: data.count
-      }));
   };
 
   const saveAlert = () => {
@@ -293,37 +219,6 @@ function HomeContent() {
   const formatConverted = (price: number, fromCurrency: string) => {
     return formatCurrencySimple(convertPrice(price, fromCurrency));
   };
-
-  const chartData = {
-    labels: priceHistory.map(p => p.date),
-    datasets: [
-      {
-        label: t.stats.average,
-        data: priceHistory.map(p => p.avgPrice),
-        borderColor: 'rgb(52, 211, 153)',
-        backgroundColor: 'rgba(52, 211, 153, 0.1)',
-        fill: true,
-        tension: 0.4,
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    plugins: { legend: { display: false } },
-    scales: {
-      x: { display: false },
-      y: {
-        ticks: { callback: (value: any) => formatCurrencySimple(value), color: '#9ca3af' },
-        grid: { color: 'rgba(255,255,255,0.05)' }
-      }
-    }
-  };
-
-  const activeAvg = activeListings.length > 0 
-    ? activeListings.reduce((a, b) => a + convertPrice(b.price, b.currency), 0) / activeListings.length 
-    : 0;
-  const priceDiff = stats ? activeAvg - convertPrice(stats.average, stats.currency || 'USD') : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -429,18 +324,6 @@ function HomeContent() {
         {priceData.length > 0 && stats && (
           <motion.section ref={resultsRef} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }} className="relative z-10 max-w-6xl mx-auto px-6 py-16">
             
-            {priceHistory.length > 0 && (
-              <div className="bg-slate-800/90 rounded-2xl p-6 border border-slate-700/50 mb-8">
-                <div className="flex items-center gap-2 mb-4">
-                  <Clock className="w-5 h-5 text-emerald-400" />
-                  <h3 className="text-lg font-bold text-white">Price Trend (30 Days)</h3>
-                </div>
-                <div className="h-48">
-                  <Line data={chartData} options={chartOptions as any} />
-                </div>
-              </div>
-            )}
-
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               {[
                 { key: 'average', label: t.stats.average, value: stats.average, color: 'emerald' },
@@ -455,36 +338,6 @@ function HomeContent() {
                 </motion.div>
               ))}
             </div>
-
-            {activeListings.length > 0 && (
-              <div className="bg-slate-800/90 rounded-2xl p-6 border border-slate-700/50 mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <ArrowRight className="w-5 h-5 text-blue-400" />
-                    <h3 className="text-lg font-bold text-white">Active vs Sold Prices</h3>
-                  </div>
-                  <span className="text-sm text-gray-400">{marketplace.flag} {marketplace.name}</span>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-slate-700/50 rounded-xl p-4 text-center">
-                    <p className="text-gray-400 text-sm mb-1">Active Avg</p>
-                    <p className="text-xl font-bold text-blue-400">{formatCurrencySimple(activeAvg)}</p>
-                  </div>
-                  <div className="bg-slate-700/50 rounded-xl p-4 text-center">
-                    <p className="text-gray-400 text-sm mb-1">Sold Avg</p>
-                    <p className="text-xl font-bold text-emerald-400">{formatConverted(stats.average, stats.currency || 'USD')}</p>
-                  </div>
-                  <div className="bg-slate-700/50 rounded-xl p-4 text-center">
-                    <p className="text-gray-400 text-sm mb-1">Active</p>
-                    <p className="text-xl font-bold text-white">{activeListings.length}</p>
-                  </div>
-                  <div className="bg-slate-700/50 rounded-xl p-4 text-center">
-                    <p className="text-gray-400 text-sm mb-1">Diff</p>
-                    <p className="text-xl font-bold text-purple-400">{formatCurrencySimple(priceDiff)}</p>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div className="bg-slate-800/90 rounded-2xl p-6 border border-slate-700/50 mb-8">
               <div className="flex items-center gap-2 mb-4">
