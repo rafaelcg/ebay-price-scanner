@@ -20,6 +20,8 @@ async function getAccessToken(): Promise<string> {
   }
   
   const credentials = Buffer.from(`${EBAY_APP_ID}:${EBAY_CERT_ID}`).toString('base64');
+  console.log('OAuth request:', { appIdLength: EBAY_APP_ID?.length, certIdLength: EBAY_CERT_ID?.length });
+  
   const response = await fetch(`${EBAY_API_BASE}/identity/v1/oauth2/token`, {
     method: 'POST',
     headers: {
@@ -31,10 +33,12 @@ async function getAccessToken(): Promise<string> {
   
   if (!response.ok) {
     const errorText = await response.text();
+    console.error('OAuth error:', response.status, errorText.substring(0, 500));
     throw new Error(`OAuth failed: ${response.statusText}`);
   }
   
   const data = await response.json();
+  console.log('OAuth success:', { hasAccessToken: !!data.access_token, expiresIn: data.expires_in });
   return data.access_token;
 }
 
