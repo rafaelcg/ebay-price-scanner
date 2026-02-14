@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://ebay-price-scanner.vercel.app/sitemap.xml
+
+# Crawl rate
+Crawl-delay: 1
+
+# Disallow API routes
+Disallow: /api/

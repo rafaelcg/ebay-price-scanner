@@ -16,6 +16,8 @@ const nextConfig = {
       },
     ],
   },
+  // Enable static export for SEO pages
+  trailingSlash: true,
 };
 
 export default nextConfig;
